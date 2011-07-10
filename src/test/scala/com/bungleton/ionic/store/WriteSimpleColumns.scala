@@ -1,5 +1,8 @@
 package com.bungleton.ionic.store
 
+import com.google.common.io.CountingInputStream
+import java.io.InputStream
+import org.testng.Reporter
 import com.threerings.fisy.Directory
 import org.apache.avro.io.Encoder
 import org.apache.avro.io.Decoder
@@ -21,6 +24,7 @@ class WriteSimpleColumns {
     val root = Paths.makeMemoryFs()
     val writer = new Writer(rec, decoder, root)
     0 until records foreach (_ => writer.write)
+    writer.close()
     root
   }
 
@@ -64,5 +68,26 @@ class WriteSimpleColumns {
       values.foreach(v => assertEquals(dec.readInt(), v, name + " wrote the wrong value"))
       assertEquals(in.read(), -1)
     }}
+  }
+
+  @Test def writeSortedLong () = {
+    val record = createRecord("TestTimestamp", List(createField("timestamp", Schema.Type.LONG)))
+
+    val colValues = List(1000, 1000, 1000, 1000, 1001, 1001, 1001, 1002, 2002, 2002)
+    val root = encodeThenWrite(record, colValues.length, enc => {
+      colValues.foreach(v=>enc.writeLong(v))
+    })
+    val in = new CountingInputStream(root.open("timestamp").read())
+    val dec = DecoderFactory.get().binaryDecoder(in, null)
+    assertEquals(dec.readLong(), 1000)
+    assertEquals(dec.readLong(), 4)
+    assertEquals(dec.readLong(), 1)
+    assertEquals(dec.readLong(), 3)
+    assertEquals(dec.readLong(), 1)
+    assertEquals(dec.readLong(), 1)
+    assertEquals(dec.readLong(), 1000)
+    assertEquals(dec.readLong(), 2)
+    assertEquals(in.read(), -1)
+    assertEquals(in.getCount, 10)
   }
 }

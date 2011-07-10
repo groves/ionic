@@ -13,6 +13,7 @@ dependencies {
     // Libraries needed for scala api
     compile 'org.scala-lang:scala-library:2.9.0'
 
+    compile 'com.google.guava:guava:r09'
     compile 'org.apache.avro:avro:1.5.1'
     compile 'com.threerings:fisy:1.0-SNAPSHOT'
 

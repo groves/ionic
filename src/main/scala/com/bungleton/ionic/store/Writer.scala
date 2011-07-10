@@ -7,7 +7,14 @@ import com.threerings.fisy.Directory
 import scala.collection.JavaConversions._
 
 class Writer (schema :Schema, decoder :Decoder, dest :Directory) {
-  private val writers = schema.getFields.map(f => new PassthroughAvroColumn(decoder, dest, f))
+  private val writers = schema.getFields.map(f =>
+      if (f.schema.getType == Schema.Type.FIXED && f.schema.getName() == "timestamp") {
+        new SortedLongColumn(decoder, dest, f)
+      } else {
+        new PassthroughAvroColumn(decoder, dest, f)
+      }
+    )
 
-  def write() { writers.foreach(_.write) }
+  def write() { writers.foreach(_.write()) }
+  def close() { writers.foreach(_.close()) }
 }
