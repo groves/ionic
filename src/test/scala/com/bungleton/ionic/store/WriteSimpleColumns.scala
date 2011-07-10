@@ -18,16 +18,6 @@ import scala.collection.JavaConversions._
 import org.apache.avro.Schema.Type._
 
 class WriteSimpleColumns {
-  def createRecord (name :String, fields :List[Schema.Field]) = {
-    val record = Schema.createRecord(name, "", "", false)
-    record.setFields(fields)
-    record
-  }
-
-  def createField (name :String, stype :Schema.Type) = {
-    new Schema.Field(name, Schema.create(stype), "", null)
-  }
-
   def check[T] (defs :List[Tuple3[String, Schema.Type, List[T]]], enc :((Encoder, T) => Unit),
     dec :((Decoder, List[T]) => Unit)) {
 
@@ -37,7 +27,8 @@ class WriteSimpleColumns {
 
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()
-    val rec = createRecord("testrec", defs.map(f => createField(f._1, f._2)))
+    val rec = Schema.createRecord("testrec", "", "", false)
+    rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
     val writer = new Writer(rec, decoder, root)
     0 until defs(0)._3.length foreach (_ => writer.write)
     writer.close()
