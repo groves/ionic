@@ -6,8 +6,8 @@ import java.io.InputStream
 import com.threerings.fisy.Directory
 import scala.collection.JavaConversions._
 
-class Writer (val schema :Schema, val decoder :Decoder, val dest :Directory) {
-  private val writers = schema.getFields.map(f => new BooleanAvroColumn(decoder, dest, f.name))
+class Writer (schema :Schema, decoder :Decoder, dest :Directory) {
+  private val writers = schema.getFields.map(f => new PassthroughAvroColumn(decoder, dest, f))
 
   def write() { writers.foreach(_.write) }
 }
