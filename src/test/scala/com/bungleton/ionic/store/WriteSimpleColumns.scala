@@ -32,6 +32,7 @@ class WriteSimpleColumns {
     val writer = new Writer(rec, decoder, root)
     0 until defs(0)._3.length foreach (_ => writer.write)
     writer.close()
+    writer.close() // Additional closes should be no-ops
 
     defs.foreach { case (name, _, values) => {
       val in = root.open(name).read()
@@ -110,6 +111,5 @@ class WriteSimpleColumns {
           assertEquals(read.limit, x.length)
           (0 until read.limit).foreach(i => assertEquals(read.get(), x(i)))
         }))
-
   }
 }

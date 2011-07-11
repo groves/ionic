@@ -12,8 +12,10 @@ class SortedLongColumn (decoder :Decoder, dest :Directory, field :Schema.Field) 
   private var previous :Long = 0
   private var offset :Long = 0
   private var countAtPrevious :Long = 0
+  private var closed :Boolean = false
 
   def write() {
+    assert(!closed)
     val current = decoder.readLong()
 
     if (current != previous) {
@@ -35,6 +37,7 @@ class SortedLongColumn (decoder :Decoder, dest :Directory, field :Schema.Field) 
       encoder.writeLong(offset)
       encoder.writeLong(countAtPrevious)
     }
+    closed = true
     out.close()
   }
 }
