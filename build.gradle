@@ -1,4 +1,7 @@
 apply plugin: 'scala'
+apply plugin: 'application'
+
+mainClassName = "com.bungleton.ionic.server.Server"
 
 repositories {
     mavenCentral()
@@ -19,7 +22,10 @@ dependencies {
 
     compile 'com.google.guava:guava:r09'
     compile 'org.apache.avro:avro:1.5.1'
+    compile 'org.apache.avro:avro-ipc:1.5.1'
     compile 'com.threerings:fisy:1.0-SNAPSHOT'
+
+    runtime 'org.slf4j:slf4j-simple:1.6.1'
 
     testCompile 'org.testng:testng:6.1'
 
