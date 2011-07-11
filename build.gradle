@@ -5,6 +5,10 @@ repositories {
     mavenLocal()
 }
 
+configurations {
+    protocol
+}
+
 dependencies {
     // Libraries needed to run the scala tools
     scalaTools 'org.scala-lang:scala-compiler:2.9.0'
@@ -18,8 +22,16 @@ dependencies {
     compile 'com.threerings:fisy:1.0-SNAPSHOT'
 
     testCompile 'org.testng:testng:6.1'
+
+    protocol 'org.apache.avro:avro-compiler:1.5.1'
 }
 
 test {
     useTestNG()
+}
+
+task genprotocol << {
+    ant.taskdef(name: "protocol", classname: "org.apache.avro.compiler.specific.ProtocolTask",
+        classpath: configurations.protocol.asPath)
+    ant.protocol(destdir: "src/main/java") { fileset(dir: "src/main/avro", includes:"**/*.avpr") }
 }

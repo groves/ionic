@@ -1,0 +1,18 @@
+{"namespace": "ionic",
+ "protocol": "Store",
+
+ "messages": {
+     "defineSchemas": {
+         "request": [{"name": "schemas", "type": {"type":"array", "items": "string"}}],
+         "response": "string"
+     },
+     "store": {
+         "request": [
+            {"name": "schema", "type": "int"},
+            {"name": "record", "type": "bytes"}
+         ],
+         "response": "string"
+     }
+ }
+}
+
