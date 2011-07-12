@@ -22,7 +22,7 @@ dependencies {
 
     compile 'com.google.guava:guava:r09'
     compile 'org.apache.avro:avro:1.5.1'
-    compile 'org.apache.avro:avro-ipc:1.5.1'
+    compile 'org.jboss.netty:netty:3.2.4.Final'
     compile 'com.threerings:fisy:1.0-SNAPSHOT'
 
     runtime 'org.slf4j:slf4j-simple:1.6.1'
@@ -40,4 +40,9 @@ task genprotocol << {
     ant.taskdef(name: "protocol", classname: "org.apache.avro.compiler.specific.ProtocolTask",
         classpath: configurations.protocol.asPath)
     ant.protocol(destdir: "src/main/java") { fileset(dir: "src/main/avro", includes:"**/*.avpr") }
+}
+
+task writeClasspath {
+    new File(buildDir, "classpath.sh").text =
+        "export CLASSPATH=${sourceSets.test.runtimeClasspath.asPath}\n"
 }
