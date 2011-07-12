@@ -13,7 +13,6 @@ import org.jboss.netty.bootstrap.ClientBootstrap
 import com.google.common.collect.Lists
 import com.bungleton.ionic.server.IonicServer
 import java.net.InetSocketAddress
-import ionic.Store
 
 object Client {
   def main (args :Array[String]) {

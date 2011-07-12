@@ -36,13 +36,7 @@ test {
     useTestNG()
 }
 
-task genprotocol << {
-    ant.taskdef(name: "protocol", classname: "org.apache.avro.compiler.specific.ProtocolTask",
-        classpath: configurations.protocol.asPath)
-    ant.protocol(destdir: "src/main/java") { fileset(dir: "src/main/avro", includes:"**/*.avpr") }
-}
-
-task writeClasspath {
+task writeClasspath << {
     new File(buildDir, "classpath.sh").text =
         "export CLASSPATH=${sourceSets.test.runtimeClasspath.asPath}\n"
 }
