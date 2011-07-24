@@ -1,5 +1,6 @@
 package com.bungleton.ionic.store
 
+import org.scalatest.testng.TestNGSuite
 import com.google.common.io.CountingInputStream
 import java.io.InputStream
 import org.testng.Reporter
@@ -17,7 +18,7 @@ import org.testng.annotations.Test
 import scala.collection.JavaConversions._
 import org.apache.avro.Schema.Type._
 
-class WriteSimpleColumns {
+class WriteSimpleColumns extends TestNGSuite {
   def check[T] (defs :List[Tuple3[String, Schema.Type, List[T]]], enc :((Encoder, T) => Unit),
     dec :((Decoder, List[T]) => Unit)) {
 
