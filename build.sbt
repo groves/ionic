@@ -1,8 +1,10 @@
 name := "ionic"
 
+version := "0.1-SNAPSHOT"
+
 scalaVersion := "2.9.0-1"
 
-resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+resolvers += "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository"
 
 libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "r09",

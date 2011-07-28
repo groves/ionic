@@ -16,11 +16,6 @@ class TestClientHandler(latch :CountDownLatch) extends SimpleChannelUpstreamHand
     buf.writeByte(2)
     buf.writeByte(3)
     chan.write(buf)
-    e.getChannel().close().addListener(new ChannelFutureListener() {
-      def operationComplete (future :ChannelFuture) {
-        latch.countDown()
-      }
-    })
   }
 
 }

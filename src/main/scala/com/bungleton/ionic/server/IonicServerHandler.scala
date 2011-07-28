@@ -1,5 +1,7 @@
 package com.bungleton.ionic.server
 
+import org.apache.avro.io.DecoderFactory
+import org.jboss.netty.buffer.ChannelBufferInputStream
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.ChannelHandlerContext
@@ -7,7 +9,11 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
 class IonicServerHandler extends SimpleChannelUpstreamHandler {
   override def messageReceived (ctx :ChannelHandlerContext, e :MessageEvent) {
-    println("GOT MSG" + e.getMessage())
+    val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
+    val decoder = DecoderFactory.get().binaryDecoder(in, null)
+    println(decoder.readInt())
+    println(decoder.readInt())
+    println(decoder.readInt())
   }
 
 }
