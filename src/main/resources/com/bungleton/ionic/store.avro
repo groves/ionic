@@ -1,0 +1,17 @@
+[
+{
+    "type": "record",
+    "name": "AddSchemas",
+    "namespace": "com.bungleton.ionic.store",
+    "fields": [ { "name": "schemas", "type": { "type": "array", "items": "string" } } ]
+},
+{
+    "type": "record",
+    "name": "Store",
+    "namespace": "com.bungleton.ionic.store",
+    "fields": [
+        { "name": "schema", "type": "long" },
+        { "name": "records", "type": "bytes" }
+    ]
+},
+]
