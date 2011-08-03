@@ -1,0 +1,7 @@
+{
+    "type": "record",
+    "name": "AddSchemas",
+    "namespace": "com.bungleton.ionic.store",
+    "fields": [ { "name": "schemas", "type": { "type": "array", "items": "string" } } ]
+}
+
