@@ -21,11 +21,10 @@ class ConnectAndSchema extends TestNGSuite {
     serverBoot.setOption("localAddress", new LocalAddress("server"))
 
     val clientBoot = new ClientBootstrap(new DefaultLocalClientChannelFactory())
-    val latch = new CountDownLatch(1)
     clientBoot.setPipelineFactory(new ChannelPipelineFactory () {
       override def getPipeline () = {
         Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-          new TestClientHandler(latch))
+          new TestClientHandler())
       }
     })
 

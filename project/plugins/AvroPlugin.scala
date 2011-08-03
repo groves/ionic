@@ -5,8 +5,9 @@ object AvroPlugin extends Plugin {
   val genavro = TaskKey[Unit]("genavro", "Generates Java from avro schemas")
 
   val genavroTask = genavro := {
-    (file("src/main/avro") ** "*.avsc").get.foreach(s =>
-      SpecificCompiler.compileSchema(s, file("src/main/java")))
+    List("src/main", "src/test").map(file).foreach(base => {
+      (base / "avro" ** "*.avsc").get.foreach(s => SpecificCompiler.compileSchema(s, base / "java"))
+    })
   }
 
   override val settings = Seq(genavroTask)

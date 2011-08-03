@@ -1,0 +1,7 @@
+{
+    "type": "record",
+    "namespace": "com.bungleton.ionic.test",
+    "name": "Event",
+    "fields": [ { "name": "timestamp", "type": "long"},
+        {"name": "value", "type": "int"}]
+}
