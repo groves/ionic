@@ -1,6 +1,5 @@
 package com.bungleton.ionic.test
 
-import com.bungleton.ionic.store.AddSchemas
 import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.specific.SpecificDatumWriter
@@ -17,12 +16,24 @@ import scala.collection.JavaConversions._
 class TestClientHandler() extends SimpleChannelUpstreamHandler {
   override def channelConnected(ctx :ChannelHandlerContext, e :ChannelStateEvent) {
     val chan = e.getChannel()
-    val buf = ChannelBuffers.buffer(4096)
-    val enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
-    val toAdd = new AddSchemas()
-    toAdd.schemas = List(Event.SCHEMA$.toString())
-    new SpecificDatumWriter(classOf[AddSchemas]).write(toAdd, enc)
-    chan.write(buf)
+    val schemaBuf = ChannelBuffers.dynamicBuffer(512)
+    var enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(schemaBuf), null)
+    enc.writeArrayStart()
+    enc.setItemCount(1)
+    enc.startItem()
+    enc.writeString(Event.SCHEMA$.toString())
+    enc.writeArrayEnd()
+    chan.write(schemaBuf)
+
+    val entryBuf = ChannelBuffers.dynamicBuffer(512)
+    enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(entryBuf), enc)
+    enc.writeInt(0)
+    enc.writeArrayStart()
+    enc.setItemCount(1)
+    enc.startItem()
+    val ev = new Event()
+    new SpecificDatumWriter(Event.SCHEMA$).write(new Event(), enc)
+    chan.write(entryBuf)
   }
 
 }

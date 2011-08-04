@@ -30,8 +30,8 @@ class WriteSimpleColumns extends TestNGSuite {
     val root = Paths.makeMemoryFs()
     val rec = Schema.createRecord("testrec", "", "", false)
     rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
-    val writer = new Writer(rec, decoder, root)
-    0 until defs(0)._3.length foreach (_ => writer.write)
+    val writer = new Writer(rec, root)
+    0 until defs(0)._3.length foreach (_ => writer.write(decoder))
     writer.close()
     writer.close() // Additional closes should be no-ops
 

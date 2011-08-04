@@ -1,5 +1,7 @@
 package com.bungleton.ionic.server
 
+import com.threerings.fisy.impl.local.LocalDirectory
+import java.io.File
 import org.jboss.netty.channel.ChannelFuture
 import org.jboss.netty.channel.ChannelFutureListener
 import org.jboss.netty.channel.Channels
@@ -28,10 +30,12 @@ class ConnectAndSchema extends TestNGSuite {
       }
     })
 
-    val server = new IonicServer(serverBoot)
+
+    val server = new IonicServer(serverBoot, IonicServer.createTempDirectory())
     val connectFuture = clientBoot.connect(new LocalAddress("server"))
     connectFuture.awaitUninterruptibly()
     clientBoot.releaseExternalResources()
-    server.close()
+    server.close().awaitUninterruptibly()
+    println("Finished")
   }
 }

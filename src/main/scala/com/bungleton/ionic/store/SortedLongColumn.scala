@@ -5,7 +5,7 @@ import com.threerings.fisy.Directory
 import org.apache.avro.io.Decoder
 import org.apache.avro.io.EncoderFactory
 
-class SortedLongColumn (decoder :Decoder, dest :Directory, field :Schema.Field) extends Column {
+class SortedLongColumn (dest :Directory, field :Schema.Field) extends Column {
   private val out = dest.open(field.name).write()
   private val encoder = EncoderFactory.get().directBinaryEncoder(out, null)
 
@@ -14,7 +14,7 @@ class SortedLongColumn (decoder :Decoder, dest :Directory, field :Schema.Field) 
   private var countAtPrevious :Long = 0
   private var closed :Boolean = false
 
-  def write() {
+  def write(decoder :Decoder) {
     assert(!closed)
     val current = decoder.readLong()
 
