@@ -1,5 +1,10 @@
 package com.bungleton.ionic.server
 
+import java.util.concurrent.CountDownLatch
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
+import java.util.concurrent.Executors
+import java.net.InetSocketAddress
 import com.threerings.fisy.impl.local.LocalDirectory
 import java.io.File
 import org.jboss.netty.channel.ChannelFuture
@@ -18,24 +23,26 @@ import org.testng.annotations.Test
 
 class ConnectAndSchema extends TestNGSuite {
   @Test def connectAndSchema () {
+    val addr = new LocalAddress(LocalAddress.EPHEMERAL)
     val serverBoot = new ServerBootstrap(new DefaultLocalServerChannelFactory())
     serverBoot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline()))
-    serverBoot.setOption("localAddress", new LocalAddress("server"))
+    serverBoot.setOption("localAddress", addr)
 
     val clientBoot = new ClientBootstrap(new DefaultLocalClientChannelFactory())
+    val latch = new CountDownLatch(1)
     clientBoot.setPipelineFactory(new ChannelPipelineFactory () {
       override def getPipeline () = {
         Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-          new TestClientHandler())
+          new TestClientHandler(latch))
       }
     })
 
 
     val server = new IonicServer(serverBoot, IonicServer.createTempDirectory())
-    val connectFuture = clientBoot.connect(new LocalAddress("server"))
+    val connectFuture = clientBoot.connect(addr)
     connectFuture.awaitUninterruptibly()
-    clientBoot.releaseExternalResources()
+    latch.await()
+    connectFuture.getChannel.close()
     server.close().awaitUninterruptibly()
-    println("Finished")
   }
 }

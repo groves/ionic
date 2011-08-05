@@ -13,7 +13,7 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 import scala.collection.JavaConversions._
 
 
-class TestClientHandler() extends SimpleChannelUpstreamHandler {
+class TestClientHandler(latch :CountDownLatch) extends SimpleChannelUpstreamHandler {
   override def channelConnected(ctx :ChannelHandlerContext, e :ChannelStateEvent) {
     val chan = e.getChannel()
     val schemaBuf = ChannelBuffers.dynamicBuffer(512)
@@ -34,6 +34,6 @@ class TestClientHandler() extends SimpleChannelUpstreamHandler {
     val ev = new Event()
     new SpecificDatumWriter(Event.SCHEMA$).write(new Event(), enc)
     chan.write(entryBuf)
+    latch.countDown()
   }
-
 }

@@ -27,6 +27,7 @@ class IonicServer (boot :ServerBootstrap, entries :Directory) {
 
   def close () :ChannelFuture = { channel.close() }
 }
+
 object IonicServer {
   val port = 10713
 

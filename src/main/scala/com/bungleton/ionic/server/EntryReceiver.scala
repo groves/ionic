@@ -1,5 +1,6 @@
 package com.bungleton.ionic.server
 
+import org.jboss.netty.channel.ChannelEvent
 import org.jboss.netty.channel.ChannelStateEvent
 import java.util.UUID
 import com.threerings.fisy.Directory
@@ -18,7 +19,6 @@ class EntryReceiver(schemas :IndexedSeq[Schema], entries :Directory)
   private val factory = DecoderFactory.get()
   private val writers = schemas.map(s => {
     val subdir = s.getFullName() + "/" + UUID.randomUUID().toString()
-    println(entries.navigate(subdir))
     new Writer(s, entries.navigate(subdir))
   })
   override def messageReceived (ctx :ChannelHandlerContext, e :MessageEvent) {
@@ -28,9 +28,7 @@ class EntryReceiver(schemas :IndexedSeq[Schema], entries :Directory)
     writers(idx).write(decoder)
   }
 
-  // TODO: Why isn't this called with server closed?
   override def channelClosed (ctx :ChannelHandlerContext, e :ChannelStateEvent) {
     writers.foreach(_.close())
   }
-
 }
