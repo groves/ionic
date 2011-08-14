@@ -18,6 +18,14 @@ import org.testng.annotations.Test
 import scala.collection.JavaConversions._
 import org.apache.avro.Schema.Type._
 
+object WriteSimpleColumns {
+  def makeSchema (defs :List[Tuple2[String, Schema.Type]]) :Schema = {
+    val rec = Schema.createRecord("testrec", "", "", false)
+    rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
+    rec
+  }
+}
+
 class WriteSimpleColumns extends TestNGSuite {
   def check[T] (defs :List[Tuple3[String, Schema.Type, List[T]]], enc :((Encoder, T) => Unit),
     dec :((Decoder, List[T]) => Unit)) {
@@ -28,8 +36,7 @@ class WriteSimpleColumns extends TestNGSuite {
 
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()
-    val rec = Schema.createRecord("testrec", "", "", false)
-    rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
+    val rec = WriteSimpleColumns.makeSchema(defs.map(t => (t._1, t._2)))
     val writer = new Writer(rec, root)
     0 until defs(0)._3.length foreach (_ => writer.write(decoder))
     writer.close()
