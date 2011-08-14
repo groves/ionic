@@ -1,12 +1,11 @@
 package ionic.server
 
-import org.jboss.netty.buffer.ChannelBuffers
 import org.apache.avro.io.BinaryData
+
 import org.jboss.netty.buffer.ChannelBuffer
-import org.jboss.netty.buffer.ChannelBufferOutputStream
+import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelHandlerContext
-import org.jboss.netty.channel.ChannelHandler.Sharable
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
 
 class AvroIntLengthFieldPrepender extends OneToOneEncoder {

@@ -1,8 +1,9 @@
 package ionic.server
 
-import org.jboss.netty.channel.ChannelStateEvent
 import java.io.ByteArrayInputStream
+
 import org.apache.avro.io.DecoderFactory
+
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelHandlerContext

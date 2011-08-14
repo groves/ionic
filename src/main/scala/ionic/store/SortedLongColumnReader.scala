@@ -1,9 +1,10 @@
 package ionic.store
 
+import org.apache.avro.Schema
 import org.apache.avro.generic.IndexedRecord
 import org.apache.avro.io.DecoderFactory
+
 import com.threerings.fisy.Directory
-import org.apache.avro.Schema
 
 class SortedLongColumnReader(source: Directory, field: Schema.Field)
   extends ColumnReader {

@@ -1,17 +1,19 @@
 package ionic.server
 
-import org.jboss.netty.channel.ChannelFuture
 import java.io.File
-import com.threerings.fisy.impl.local.LocalDirectory
-import com.threerings.fisy.Directory
-import java.net.SocketAddress
-import org.jboss.netty.channel.Channel
-import org.jboss.netty.channel.Channels
-import org.jboss.netty.channel.ChannelPipelineFactory
-import java.util.concurrent.Executors
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.bootstrap.ServerBootstrap
 import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.util.concurrent.Executors
+
+import org.jboss.netty.bootstrap.ServerBootstrap
+import org.jboss.netty.channel.Channel
+import org.jboss.netty.channel.ChannelFuture
+import org.jboss.netty.channel.ChannelPipelineFactory
+import org.jboss.netty.channel.Channels
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
+
+import com.threerings.fisy.Directory
+import com.threerings.fisy.impl.local.LocalDirectory
 
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */
 class IonicServer(boot: ServerBootstrap, entries: Directory) {

@@ -1,13 +1,14 @@
 package ionic.store
 
 import java.nio.ByteBuffer
-import org.apache.avro.util.Utf8
-import org.apache.avro.io.EncoderFactory
-import com.threerings.fisy.Directory
-import org.apache.avro.io.Decoder
-import org.apache.avro.Schema
 
+import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
+import org.apache.avro.io.Decoder
+import org.apache.avro.io.EncoderFactory
+import org.apache.avro.util.Utf8
+
+import com.threerings.fisy.Directory
 
 class PassthroughAvroColumnWriter(dest: Directory, field: Schema.Field)
   extends ColumnWriter {

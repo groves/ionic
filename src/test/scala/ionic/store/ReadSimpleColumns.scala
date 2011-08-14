@@ -1,16 +1,18 @@
 package ionic.store
 
-import com.threerings.fisy.Directory
-import org.apache.avro.io.Encoder
-import org.apache.avro.Schema
-import org.apache.avro.io.DecoderFactory
-import org.apache.avro.io.EncoderFactory
 import java.io.ByteArrayOutputStream
-import org.apache.avro.generic.GenericData
-import com.threerings.fisy.Paths
-import scala.collection.mutable.Stack
-import org.scalatest.FunSuite
+
+import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
+import org.apache.avro.generic.GenericData
+import org.apache.avro.io.DecoderFactory
+import org.apache.avro.io.Encoder
+import org.apache.avro.io.EncoderFactory
+
+import org.scalatest.FunSuite
+
+import com.threerings.fisy.Directory
+import com.threerings.fisy.Paths
 
 class ReadSimpleColumns extends FunSuite {
   test("reading booleans") {

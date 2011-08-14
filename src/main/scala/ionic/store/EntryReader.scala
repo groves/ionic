@@ -1,11 +1,12 @@
 package ionic.store
 
+import scala.collection.JavaConversions._
+
+import org.apache.avro.Schema
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.io.Decoder
-import org.apache.avro.Schema
+
 import com.threerings.fisy.Directory
-import scala.collection.JavaConversions._
 
 class EntryReader(source: Directory) {
   private val schema = Schema.parse(source.open("schema.avsc").read())

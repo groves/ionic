@@ -1,15 +1,15 @@
 package ionic.store
 
-import org.apache.avro.io.DecoderFactory
-import org.apache.avro.generic.IndexedRecord
 import java.nio.ByteBuffer
-import org.apache.avro.util.Utf8
-import org.apache.avro.io.EncoderFactory
-import com.threerings.fisy.Directory
-import org.apache.avro.io.Decoder
-import org.apache.avro.Schema
 
+import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
+import org.apache.avro.generic.IndexedRecord
+import org.apache.avro.io.Decoder
+import org.apache.avro.io.DecoderFactory
+import org.apache.avro.util.Utf8
+
+import com.threerings.fisy.Directory
 
 class PassthroughAvroColumnReader(source: Directory, field: Schema.Field)
   extends ColumnReader {

@@ -1,19 +1,19 @@
 package ionic.store
 
-import org.scalatest.FunSuite
-import com.google.common.io.CountingInputStream
-import java.io.InputStream
-import com.threerings.fisy.Directory
-import org.apache.avro.io.Encoder
-import org.apache.avro.io.Decoder
-import com.threerings.fisy.Paths
-import org.apache.avro.io.EncoderFactory
 import java.io.ByteArrayOutputStream
-import org.apache.avro.io.DecoderFactory
-import org.apache.avro.Schema
 
 import scala.collection.JavaConversions._
+
+import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
+import org.apache.avro.io.Decoder
+import org.apache.avro.io.DecoderFactory
+import org.apache.avro.io.Encoder
+import org.apache.avro.io.EncoderFactory
+
+import org.scalatest.FunSuite
+
+import com.threerings.fisy.Paths
 
 object WriteSimpleColumns {
   def makeSchema(defs: List[Tuple2[String, Schema.Type]]): Schema = {

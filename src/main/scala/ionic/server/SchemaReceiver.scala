@@ -1,15 +1,15 @@
 package ionic.server
 
-import com.threerings.fisy.Directory
 import org.apache.avro.Schema
-import scala.collection.immutable.IndexedSeq
-import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.io.DecoderFactory
-import org.jboss.netty.buffer.ChannelBufferInputStream
+
 import org.jboss.netty.buffer.ChannelBuffer
-import org.jboss.netty.channel.MessageEvent
+import org.jboss.netty.buffer.ChannelBufferInputStream
 import org.jboss.netty.channel.ChannelHandlerContext
+import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
+
+import com.threerings.fisy.Directory
 
 class SchemaReceiver(entries: Directory) extends SimpleChannelUpstreamHandler {
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {

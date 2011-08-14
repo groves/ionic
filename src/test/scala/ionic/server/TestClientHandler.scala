@@ -1,16 +1,17 @@
 package ionic.test
 
-import org.jboss.netty.buffer.ChannelBufferOutputStream
+import java.util.concurrent.CountDownLatch
+
+import scala.collection.JavaConversions._
+
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.specific.SpecificDatumWriter
+
+import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.jboss.netty.buffer.ChannelBuffers
-import org.jboss.netty.channel.ChannelStateEvent
-import java.util.concurrent.CountDownLatch
-import org.jboss.netty.channel.ChannelFuture
-import org.jboss.netty.channel.ChannelFutureListener
 import org.jboss.netty.channel.ChannelHandlerContext
+import org.jboss.netty.channel.ChannelStateEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
-import scala.collection.JavaConversions._
 
 class TestClientHandler(latch: CountDownLatch) extends SimpleChannelUpstreamHandler {
   override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {

@@ -1,24 +1,18 @@
 package ionic.server
 
-import org.scalatest.FunSuite
 import java.util.concurrent.CountDownLatch
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import java.util.concurrent.Executors
-import java.net.InetSocketAddress
-import com.threerings.fisy.impl.local.LocalDirectory
-import java.io.File
-import org.jboss.netty.channel.ChannelFuture
-import org.jboss.netty.channel.ChannelFutureListener
-import org.jboss.netty.channel.Channels
-import org.jboss.netty.channel.ChannelPipelineFactory
-import java.util.concurrent.CountDownLatch
+
 import ionic.test.TestClientHandler
+
 import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel.local.DefaultLocalClientChannelFactory
-import org.jboss.netty.channel.local.LocalAddress
 import org.jboss.netty.bootstrap.ServerBootstrap
+import org.jboss.netty.channel.ChannelPipelineFactory
+import org.jboss.netty.channel.Channels
+import org.jboss.netty.channel.local.DefaultLocalClientChannelFactory
 import org.jboss.netty.channel.local.DefaultLocalServerChannelFactory
+import org.jboss.netty.channel.local.LocalAddress
+
+import org.scalatest.FunSuite
 
 class ConnectAndSchema extends FunSuite {
   test("connect and send schema") {

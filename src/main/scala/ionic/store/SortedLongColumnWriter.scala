@@ -1,9 +1,10 @@
 package ionic.store
 
 import org.apache.avro.Schema
-import com.threerings.fisy.Directory
 import org.apache.avro.io.Decoder
 import org.apache.avro.io.EncoderFactory
+
+import com.threerings.fisy.Directory
 
 class SortedLongColumnWriter(dest: Directory, field: Schema.Field) extends ColumnWriter {
   private val out = dest.open(field.name).write()

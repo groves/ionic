@@ -1,18 +1,20 @@
 package ionic.server
 
-import org.jboss.netty.channel.ChannelEvent
-import org.jboss.netty.channel.ChannelStateEvent
 import java.util.UUID
-import com.threerings.fisy.Directory
-import com.threerings.fisy.Directory
-import org.jboss.netty.buffer.ChannelBuffer
+
 import ionic.store.EntryWriter
-import org.jboss.netty.buffer.ChannelBufferInputStream
-import org.apache.avro.io.DecoderFactory
-import org.jboss.netty.channel.MessageEvent
-import org.jboss.netty.channel.ChannelHandlerContext
+
 import org.apache.avro.Schema
+import org.apache.avro.io.DecoderFactory
+
+import org.jboss.netty.buffer.ChannelBuffer
+import org.jboss.netty.buffer.ChannelBufferInputStream
+import org.jboss.netty.channel.ChannelHandlerContext
+import org.jboss.netty.channel.ChannelStateEvent
+import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
+
+import com.threerings.fisy.Directory
 
 class EntryReceiver(schemas: IndexedSeq[Schema], entries: Directory)
   extends SimpleChannelUpstreamHandler {
