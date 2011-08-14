@@ -1,5 +1,6 @@
 package com.bungleton.ionic.store
 
+import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.Decoder
 import org.apache.avro.Schema
@@ -16,6 +17,10 @@ class EntryReader (source :Directory) {
       }
   )
 
-  def read(record :GenericRecord=null) { readers.foreach(_.read(record)) }
+  def read(old :GenericRecord=null) :GenericRecord = {
+    val record = if (old != null) { old } else { new GenericData.Record(schema) }
+    readers.foreach(_.read(record))
+    record
+  }
   def close() { readers.foreach(_.close()) }
 }
