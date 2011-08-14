@@ -17,8 +17,12 @@ class ReadSimpleColumns extends FunSuite {
     val baos = new ByteArrayOutputStream
     val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
     encoder.writeBoolean(true)
+    encoder.writeBoolean(false)
+    encoder.writeBoolean(false)
     val writer = new EntryWriter(schema, root)
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
+    writer.write(decoder)
+    writer.write(decoder)
     writer.write(decoder)
     writer.close()
 
@@ -26,6 +30,10 @@ class ReadSimpleColumns extends FunSuite {
     val toRead = new GenericData.Record(schema)
     reader.read(toRead)
     assert(toRead.get("bool1") === true)
+    reader.read(toRead)
+    assert(toRead.get("bool1") === false)
+    reader.read(toRead)
+    assert(toRead.get("bool1") === false)
     reader.close()
   }
 
@@ -42,6 +50,7 @@ class ReadSimpleColumns extends FunSuite {
     encoder.writeString("Bye")
     val writer = new EntryWriter(schema, root)
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
+    writer.write(decoder)
     writer.write(decoder)
     writer.close()
 
