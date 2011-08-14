@@ -14,30 +14,30 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import java.net.InetSocketAddress
 
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */
-class IonicServer (boot :ServerBootstrap, entries :Directory) {
+class IonicServer(boot: ServerBootstrap, entries: Directory) {
   boot.setPipelineFactory(new ChannelPipelineFactory() {
-      override def getPipeline () = {
-        // TODO - add an executor since we're doing disk IO
-        Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-          new SchemaReceiver(entries))
-      }
-    })
-  val channel :Channel = boot.bind()
-  val address :SocketAddress = channel.getLocalAddress
+    override def getPipeline() = {
+      // TODO - add an executor since we're doing disk IO
+      Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
+        new SchemaReceiver(entries))
+    }
+  })
+  val channel: Channel = boot.bind()
+  val address: SocketAddress = channel.getLocalAddress
 
-  def close () :ChannelFuture = { channel.close() }
+  def close(): ChannelFuture = { channel.close() }
 }
 
 object IonicServer {
   val port = 10713
 
-  def createTempDirectory () :Directory = {
+  def createTempDirectory(): Directory = {
     val dir = new File(System.getProperty("java.io.tmpdir"), "ionic-entries")
     dir.mkdir()
     new LocalDirectory(dir)
   }
 
-  def main (args :Array[String]) {
+  def main(args: Array[String]) {
     val boot = new ServerBootstrap(new NioServerSocketChannelFactory(
       Executors.newCachedThreadPool(), Executors.newCachedThreadPool()))
     boot.setOption("localAddress", new InetSocketAddress(port))

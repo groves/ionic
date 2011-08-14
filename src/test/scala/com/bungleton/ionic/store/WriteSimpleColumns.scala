@@ -16,7 +16,7 @@ import scala.collection.JavaConversions._
 import org.apache.avro.Schema.Type._
 
 object WriteSimpleColumns {
-  def makeSchema (defs :List[Tuple2[String, Schema.Type]]) :Schema = {
+  def makeSchema(defs: List[Tuple2[String, Schema.Type]]): Schema = {
     val rec = Schema.createRecord("testrec", "", "", false)
     rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
     rec
@@ -24,12 +24,12 @@ object WriteSimpleColumns {
 }
 
 class WriteSimpleColumns extends FunSuite {
-  def check[T] (defs :List[Tuple3[String, Schema.Type, List[T]]], enc :((Encoder, T) => Unit),
-    dec :((Decoder, List[T]) => Unit)) {
+  def check[T](defs: List[Tuple3[String, Schema.Type, List[T]]], enc: ((Encoder, T) => Unit),
+    dec: ((Decoder, List[T]) => Unit)) {
 
     val baos = new ByteArrayOutputStream
     val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
-    0 until defs(0)._3.length foreach(x => defs.foreach(f => enc(encoder, f._3(x))))
+    0 until defs(0)._3.length foreach (x => defs.foreach(f => enc(encoder, f._3(x))))
 
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()
@@ -39,12 +39,14 @@ class WriteSimpleColumns extends FunSuite {
     writer.close()
     writer.close() // Additional closes should be no-ops
 
-    defs.foreach { case (name, _, values) => {
-      val in = root.open(name).read()
-      val decoder = DecoderFactory.get().binaryDecoder(in, null)
-      dec(decoder, values)
-      assert(in.read() === -1)
-    }}
+    defs.foreach {
+      case (name, _, values) => {
+        val in = root.open(name).read()
+        val decoder = DecoderFactory.get().binaryDecoder(in, null)
+        dec(decoder, values)
+        assert(in.read() === -1)
+      }
+    }
   }
 
   test("write booleans") {
@@ -74,7 +76,7 @@ class WriteSimpleColumns extends FunSuite {
         assert(dec.readLong() === 1)
         assert(dec.readLong() === 1000)
         assert(dec.readLong() === 2)
-       })
+      })
   }
 
   test("write strings") {
@@ -84,7 +86,7 @@ class WriteSimpleColumns extends FunSuite {
   }
 
   test("write doubles") {
-    check[Double](List(("double", DOUBLE, List(0.1, 1289213.3281 -213232123.1))),
+    check[Double](List(("double", DOUBLE, List(0.1, 1289213.3281 - 213232123.1))),
       (enc, value) => enc.writeDouble(value),
       (dec, values) => values.foreach(x => assert(dec.readDouble() === x)))
   }
@@ -112,9 +114,9 @@ class WriteSimpleColumns extends FunSuite {
       List(Array[Byte](1, 2, 3), Array[Byte](), Array[Byte](23, 43, 12)))),
       (enc, value) => enc.writeBytes(value),
       (dec, values) => values.foreach(x => {
-          val read = dec.readBytes(null)
-          assert(read.limit === x.length)
-          (0 until read.limit).foreach(i => assert(read.get() === x(i)))
-        }))
+        val read = dec.readBytes(null)
+        assert(read.limit === x.length)
+        (0 until read.limit).foreach(i => assert(read.get() === x(i)))
+      }))
   }
 }

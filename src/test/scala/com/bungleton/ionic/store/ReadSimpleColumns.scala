@@ -31,7 +31,7 @@ class ReadSimpleColumns extends FunSuite {
 
   test("reading longs and strings") {
     val schema =
-        WriteSimpleColumns.makeSchema(List(("long1", LONG), ("string2", STRING)))
+      WriteSimpleColumns.makeSchema(List(("long1", LONG), ("string2", STRING)))
 
     val root = write(schema, 2, (encoder) => {
       encoder.writeLong(1234)
@@ -54,7 +54,7 @@ class ReadSimpleColumns extends FunSuite {
     val schema =
       WriteSimpleColumns.makeSchema(List(("timestamp", LONG), ("string", STRING)))
 
-    val root = write (schema, 4, (encoder) => {
+    val root = write(schema, 4, (encoder) => {
       encoder.writeLong(1234)
       encoder.writeString("Hi")
       encoder.writeLong(1234)
@@ -81,13 +81,13 @@ class ReadSimpleColumns extends FunSuite {
     reader.close()
   }
 
-  def write (schema :Schema, numEntries :Int, enc :((Encoder) => Unit)) :Directory = {
+  def write(schema: Schema, numEntries: Int, enc: ((Encoder) => Unit)): Directory = {
     val root = Paths.makeMemoryFs()
     val baos = new ByteArrayOutputStream
     enc(EncoderFactory.get().directBinaryEncoder(baos, null))
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val writer = new EntryWriter(schema, root)
-    0 until numEntries foreach(_ => writer.write(decoder))
+    0 until numEntries foreach (_ => writer.write(decoder))
     writer.close()
     root
   }

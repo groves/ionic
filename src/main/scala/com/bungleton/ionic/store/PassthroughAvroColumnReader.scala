@@ -11,10 +11,10 @@ import org.apache.avro.Schema
 
 import org.apache.avro.Schema.Type._
 
-class PassthroughAvroColumnReader (source :Directory, field :Schema.Field)
-    extends ColumnReader {
+class PassthroughAvroColumnReader(source: Directory, field: Schema.Field)
+  extends ColumnReader {
   private var utf8Buf = new Utf8
-  private var byteBuf :ByteBuffer = null
+  private var byteBuf: ByteBuffer = null
   private val in = source.open(field.name).read()
   private val decoder = DecoderFactory.get().binaryDecoder(in, null)
   private val reader = field.schema.getType match {
@@ -34,6 +34,6 @@ class PassthroughAvroColumnReader (source :Directory, field :Schema.Field)
     }
     case x => throw new IllegalArgumentException("Unknown schema type: " + x)
   }
-  def read(rec :IndexedRecord) { rec.put(field.pos, reader()) }
+  def read(rec: IndexedRecord) { rec.put(field.pos, reader()) }
   def close() { in.close() }
 }

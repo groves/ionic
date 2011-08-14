@@ -5,16 +5,16 @@ import com.threerings.fisy.Directory
 import org.apache.avro.io.Decoder
 import org.apache.avro.io.EncoderFactory
 
-class SortedLongColumnWriter (dest :Directory, field :Schema.Field) extends ColumnWriter {
+class SortedLongColumnWriter(dest: Directory, field: Schema.Field) extends ColumnWriter {
   private val out = dest.open(field.name).write()
   private val encoder = EncoderFactory.get().directBinaryEncoder(out, null)
 
-  private var previous :Long = 0
-  private var offset :Long = 0
-  private var countAtPrevious :Long = 0
-  private var closed :Boolean = false
+  private var previous: Long = 0
+  private var offset: Long = 0
+  private var countAtPrevious: Long = 0
+  private var closed: Boolean = false
 
-  def write(decoder :Decoder) {
+  def write(decoder: Decoder) {
     assert(!closed)
     val current = decoder.readLong()
 
@@ -31,8 +31,7 @@ class SortedLongColumnWriter (dest :Directory, field :Schema.Field) extends Colu
     }
   }
 
-
-  def close () {
+  def close() {
     if (countAtPrevious > 0) {
       encoder.writeLong(offset)
       encoder.writeLong(countAtPrevious)

@@ -29,13 +29,12 @@ class ConnectAndSchema extends FunSuite {
 
     val clientBoot = new ClientBootstrap(new DefaultLocalClientChannelFactory())
     val latch = new CountDownLatch(1)
-    clientBoot.setPipelineFactory(new ChannelPipelineFactory () {
-      override def getPipeline () = {
+    clientBoot.setPipelineFactory(new ChannelPipelineFactory() {
+      override def getPipeline() = {
         Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
           new TestClientHandler(latch))
       }
     })
-
 
     val server = new IonicServer(serverBoot, IonicServer.createTempDirectory())
     val connectFuture = clientBoot.connect(addr)

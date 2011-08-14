@@ -12,9 +12,8 @@ import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 import scala.collection.JavaConversions._
 
-
-class TestClientHandler(latch :CountDownLatch) extends SimpleChannelUpstreamHandler {
-  override def channelConnected(ctx :ChannelHandlerContext, e :ChannelStateEvent) {
+class TestClientHandler(latch: CountDownLatch) extends SimpleChannelUpstreamHandler {
+  override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
     val chan = e.getChannel()
     val schemaBuf = ChannelBuffers.dynamicBuffer(512)
     var enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(schemaBuf), null)

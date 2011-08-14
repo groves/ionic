@@ -11,5 +11,7 @@ libraryDependencies ++= Seq(
   "org.apache.avro" % "avro" % "1.5.1",
   "org.jboss.netty" % "netty" % "3.2.4.Final",
   "com.threerings" % "fisy" % "1.0-SNAPSHOT",
-  "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test",
+  "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test"
 )
+
+seq(ScalariformPlugin.settings: _*)
