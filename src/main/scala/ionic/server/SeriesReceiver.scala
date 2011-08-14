@@ -2,7 +2,7 @@ package ionic.server
 
 import java.util.UUID
 
-import ionic.store.EntryWriter
+import ionic.store.series.SeriesWriter
 
 import org.apache.avro.Schema
 import org.apache.avro.io.DecoderFactory
@@ -16,12 +16,12 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
 import com.threerings.fisy.Directory
 
-class EntryReceiver(schemas: IndexedSeq[Schema], entries: Directory)
+class SeriesReceiver(schemas: IndexedSeq[Schema], entries: Directory)
   extends SimpleChannelUpstreamHandler {
   private val factory = DecoderFactory.get()
   private val writers = schemas.map(s => {
     val subdir = s.getFullName() + "/" + UUID.randomUUID().toString()
-    new EntryWriter(s, entries.navigate(subdir))
+    new SeriesWriter(s, entries.navigate(subdir))
   })
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])

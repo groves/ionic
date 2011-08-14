@@ -1,4 +1,4 @@
-package ionic.store
+package ionic.store.series
 
 import java.io.ByteArrayOutputStream
 
@@ -34,7 +34,7 @@ class WriteSimpleColumns extends FunSuite {
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()
     val rec = WriteSimpleColumns.makeSchema(defs.map(t => (t._1, t._2)))
-    val writer = new EntryWriter(rec, root)
+    val writer = new SeriesWriter(rec, root)
     0 until defs(0)._3.length foreach (_ => writer.write(decoder))
     writer.close()
     writer.close() // Additional closes should be no-ops

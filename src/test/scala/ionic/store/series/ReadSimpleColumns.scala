@@ -1,4 +1,4 @@
-package ionic.store
+package ionic.store.series
 
 import java.io.ByteArrayOutputStream
 
@@ -24,7 +24,7 @@ class ReadSimpleColumns extends FunSuite {
       encoder.writeBoolean(false)
     })
 
-    val reader = new EntryReader(root)
+    val reader = new SeriesReader(root)
     assert(reader.read().get("bool1") === true)
     assert(reader.read().get("bool1") === false)
     assert(reader.read().get("bool1") === false)
@@ -42,7 +42,7 @@ class ReadSimpleColumns extends FunSuite {
       encoder.writeString("Bye")
     })
 
-    val reader = new EntryReader(root)
+    val reader = new SeriesReader(root)
     val toRead = new GenericData.Record(schema)
     assert(reader.read(toRead).get("long1") === 1234)
     assert(toRead.get("string2").toString() === "Hi")
@@ -67,7 +67,7 @@ class ReadSimpleColumns extends FunSuite {
       encoder.writeString("Bye again")
     })
 
-    val reader = new EntryReader(root)
+    val reader = new SeriesReader(root)
     val read = reader.read()
     assert(read.get("timestamp") === 1234)
     assert(read.get("string").toString() === "Hi")
@@ -88,7 +88,7 @@ class ReadSimpleColumns extends FunSuite {
     val baos = new ByteArrayOutputStream
     enc(EncoderFactory.get().directBinaryEncoder(baos, null))
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
-    val writer = new EntryWriter(schema, root)
+    val writer = new SeriesWriter(schema, root)
     0 until numEntries foreach (_ => writer.write(decoder))
     writer.close()
     root

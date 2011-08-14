@@ -1,4 +1,4 @@
-package ionic.store
+package ionic.store.series
 
 import java.io.OutputStreamWriter
 
@@ -11,7 +11,7 @@ import org.apache.avro.io.Decoder
 
 import com.threerings.fisy.Directory
 
-class EntryWriter(schema: Schema, dest: Directory) {
+class SeriesWriter(schema: Schema, dest: Directory) {
   private val writers = schema.getFields.map(f =>
     if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp") {
       new SortedLongColumnWriter(dest, f)

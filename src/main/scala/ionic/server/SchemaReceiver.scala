@@ -18,6 +18,6 @@ class SchemaReceiver(entries: Directory) extends SimpleChannelUpstreamHandler {
     var schemas = Array.fill(decoder.readArrayStart().toInt) {
       Schema.parse(decoder.readString(null).toString())
     }
-    ctx.getPipeline().replace(this, "entryReceiver", new EntryReceiver(schemas, entries))
+    ctx.getPipeline().replace(this, "entryReceiver", new SeriesReceiver(schemas, entries))
   }
 }

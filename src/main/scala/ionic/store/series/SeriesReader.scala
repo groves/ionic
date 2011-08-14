@@ -1,4 +1,4 @@
-package ionic.store
+package ionic.store.series
 
 import scala.collection.JavaConversions._
 
@@ -8,7 +8,7 @@ import org.apache.avro.generic.GenericRecord
 
 import com.threerings.fisy.Directory
 
-class EntryReader(source: Directory) {
+class SeriesReader(source: Directory) {
   private val schema = Schema.parse(source.open("schema.avsc").read())
   private val readers = schema.getFields.map(f =>
     if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp") {

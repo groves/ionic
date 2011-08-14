@@ -1,4 +1,4 @@
-package ionic.store
+package ionic.store.series
 
 import org.apache.avro.generic.IndexedRecord
 
