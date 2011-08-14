@@ -1,4 +1,4 @@
-package com.bungleton.ionic.server
+package ionic.server
 
 import com.threerings.fisy.Directory
 import org.apache.avro.Schema

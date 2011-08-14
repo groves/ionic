@@ -1,4 +1,4 @@
-package com.bungleton.ionic.test
+package ionic.test
 
 import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.apache.avro.io.EncoderFactory

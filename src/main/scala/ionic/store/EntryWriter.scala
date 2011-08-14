@@ -1,4 +1,4 @@
-package com.bungleton.ionic.store
+package ionic.store
 
 import java.io.OutputStreamWriter
 import com.google.common.base.Charsets

@@ -1,4 +1,4 @@
-package com.bungleton.ionic.server
+package ionic.server
 
 import org.jboss.netty.channel.ChannelFuture
 import java.io.File

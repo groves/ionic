@@ -1,4 +1,4 @@
-package com.bungleton.ionic.server
+package ionic.server
 
 import org.scalatest.FunSuite
 import java.util.concurrent.CountDownLatch
@@ -13,7 +13,7 @@ import org.jboss.netty.channel.ChannelFutureListener
 import org.jboss.netty.channel.Channels
 import org.jboss.netty.channel.ChannelPipelineFactory
 import java.util.concurrent.CountDownLatch
-import com.bungleton.ionic.test.TestClientHandler
+import ionic.test.TestClientHandler
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.local.DefaultLocalClientChannelFactory
 import org.jboss.netty.channel.local.LocalAddress

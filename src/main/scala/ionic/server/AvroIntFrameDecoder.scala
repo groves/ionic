@@ -1,4 +1,4 @@
-package com.bungleton.ionic.server
+package ionic.server
 
 import org.jboss.netty.channel.ChannelStateEvent
 import java.io.ByteArrayInputStream

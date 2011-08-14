@@ -1,4 +1,4 @@
-package com.bungleton.ionic.store
+package ionic.store
 
 import com.threerings.fisy.Directory
 import org.apache.avro.io.Encoder

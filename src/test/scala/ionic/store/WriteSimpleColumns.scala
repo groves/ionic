@@ -1,4 +1,4 @@
-package com.bungleton.ionic.store
+package ionic.store
 
 import org.scalatest.FunSuite
 import com.google.common.io.CountingInputStream

@@ -1,4 +1,4 @@
-package com.bungleton.ionic.store
+package ionic.store
 
 import java.nio.ByteBuffer
 import org.apache.avro.util.Utf8

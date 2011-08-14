@@ -1,4 +1,4 @@
-package com.bungleton.ionic.server
+package ionic.server
 
 import org.jboss.netty.channel.ChannelEvent
 import org.jboss.netty.channel.ChannelStateEvent
@@ -6,7 +6,7 @@ import java.util.UUID
 import com.threerings.fisy.Directory
 import com.threerings.fisy.Directory
 import org.jboss.netty.buffer.ChannelBuffer
-import com.bungleton.ionic.store.EntryWriter
+import ionic.store.EntryWriter
 import org.jboss.netty.buffer.ChannelBufferInputStream
 import org.apache.avro.io.DecoderFactory
 import org.jboss.netty.channel.MessageEvent

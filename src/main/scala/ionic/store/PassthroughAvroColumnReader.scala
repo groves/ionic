@@ -1,4 +1,4 @@
-package com.bungleton.ionic.store
+package ionic.store
 
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.generic.IndexedRecord
