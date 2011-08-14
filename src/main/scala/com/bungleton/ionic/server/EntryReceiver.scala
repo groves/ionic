@@ -6,7 +6,7 @@ import java.util.UUID
 import com.threerings.fisy.Directory
 import com.threerings.fisy.Directory
 import org.jboss.netty.buffer.ChannelBuffer
-import com.bungleton.ionic.store.Writer
+import com.bungleton.ionic.store.EntryWriter
 import org.jboss.netty.buffer.ChannelBufferInputStream
 import org.apache.avro.io.DecoderFactory
 import org.jboss.netty.channel.MessageEvent
@@ -19,7 +19,7 @@ class EntryReceiver(schemas :IndexedSeq[Schema], entries :Directory)
   private val factory = DecoderFactory.get()
   private val writers = schemas.map(s => {
     val subdir = s.getFullName() + "/" + UUID.randomUUID().toString()
-    new Writer(s, entries.navigate(subdir))
+    new EntryWriter(s, entries.navigate(subdir))
   })
   override def messageReceived (ctx :ChannelHandlerContext, e :MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])

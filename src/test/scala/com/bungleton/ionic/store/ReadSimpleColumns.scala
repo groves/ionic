@@ -19,7 +19,7 @@ class ReadSimpleColumns extends FunSuite {
     val baos = new ByteArrayOutputStream
     val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
     encoder.writeBoolean(true)
-    val writer = new Writer(schema, root)
+    val writer = new EntryWriter(schema, root)
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     writer.write(decoder)
     writer.close()

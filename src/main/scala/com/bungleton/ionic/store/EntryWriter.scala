@@ -8,12 +8,12 @@ import java.io.InputStream
 import com.threerings.fisy.Directory
 import scala.collection.JavaConversions._
 
-class Writer (schema :Schema, dest :Directory) {
+class EntryWriter (schema :Schema, dest :Directory) {
   private val writers = schema.getFields.map(f =>
       if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp") {
-        new SortedLongColumn(dest, f)
+        new SortedLongColumnWriter(dest, f)
       } else {
-        new PassthroughAvroColumn(dest, f)
+        new PassthroughAvroColumnWriter(dest, f)
       }
     )
 

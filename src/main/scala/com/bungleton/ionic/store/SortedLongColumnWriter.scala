@@ -5,7 +5,7 @@ import com.threerings.fisy.Directory
 import org.apache.avro.io.Decoder
 import org.apache.avro.io.EncoderFactory
 
-class SortedLongColumn (dest :Directory, field :Schema.Field) extends Column {
+class SortedLongColumnWriter (dest :Directory, field :Schema.Field) extends ColumnWriter {
   private val out = dest.open(field.name).write()
   private val encoder = EncoderFactory.get().directBinaryEncoder(out, null)
 

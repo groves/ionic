@@ -9,11 +9,8 @@ import org.apache.avro.Schema
 
 import org.apache.avro.Schema.Type._
 
-object PassthroughAvroColumn {
-  val passthroughTypes = Set(NULL, BOOLEAN, INT, LONG, FLOAT, DOUBLE, BYTES, STRING)
-}
-class PassthroughAvroColumn (dest :Directory, field :Schema.Field)
-    extends Column {
+class PassthroughAvroColumnWriter (dest :Directory, field :Schema.Field)
+    extends ColumnWriter {
   private var utf8Buf = new Utf8
   private var byteBuf :ByteBuffer = null
   private val out = dest.open(field.name).write()
