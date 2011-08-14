@@ -11,7 +11,8 @@ import org.apache.avro.Schema
 
 import org.apache.avro.Schema.Type._
 
-class PassthroughAvroColumnReader (source :Directory, field :Schema.Field) {
+class PassthroughAvroColumnReader (source :Directory, field :Schema.Field)
+    extends ColumnReader {
   private var utf8Buf = new Utf8
   private var byteBuf :ByteBuffer = null
   private val in = source.open(field.name).read()

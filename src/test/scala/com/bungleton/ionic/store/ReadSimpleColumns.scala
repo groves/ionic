@@ -64,4 +64,45 @@ class ReadSimpleColumns extends FunSuite {
     assert(toRead.get("string2").toString() === "Bye")
     reader.close()
   }
+
+  test("reading timestamps") {
+    val root = Paths.makeMemoryFs()
+    val schema =
+      WriteSimpleColumns.makeSchema(List(("timestamp", LONG), ("string", STRING)))
+
+    val baos = new ByteArrayOutputStream
+    val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
+    encoder.writeLong(1234)
+    encoder.writeString("Hi")
+    encoder.writeLong(1234)
+    encoder.writeString("Bye")
+    encoder.writeLong(1236)
+    encoder.writeString("Hi again")
+    encoder.writeLong(1236)
+    encoder.writeString("Bye again")
+    val writer = new EntryWriter(schema, root)
+    val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
+    println(baos.toByteArray().length)
+    writer.write(decoder)
+    writer.write(decoder)
+    writer.write(decoder)
+    writer.write(decoder)
+    writer.close()
+
+    val reader = new EntryReader(root)
+    val toRead = new GenericData.Record(schema)
+    reader.read(toRead)
+    assert(toRead.get("timestamp") === 1234)
+    assert(toRead.get("string").toString() === "Hi")
+    reader.read(toRead)
+    assert(toRead.get("timestamp") === 1234)
+    assert(toRead.get("string").toString() === "Bye")
+    reader.read(toRead)
+    assert(toRead.get("timestamp") === 1236)
+    assert(toRead.get("string").toString() === "Hi again")
+    reader.read(toRead)
+    assert(toRead.get("timestamp") === 1236)
+    assert(toRead.get("string").toString() === "Bye again")
+    reader.close()
+  }
 }

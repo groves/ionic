@@ -8,7 +8,13 @@ import scala.collection.JavaConversions._
 
 class EntryReader (source :Directory) {
   private val schema = Schema.parse(source.open("schema.avsc").read())
-  private val readers = schema.getFields.map(f => new PassthroughAvroColumnReader(source, f))
+  private val readers = schema.getFields.map(f =>
+      if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp") {
+        new SortedLongColumnReader(source, f)
+      } else {
+        new PassthroughAvroColumnReader(source, f)
+      }
+  )
 
   def read(record :GenericRecord=null) { readers.foreach(_.read(record)) }
   def close() { readers.foreach(_.close()) }
