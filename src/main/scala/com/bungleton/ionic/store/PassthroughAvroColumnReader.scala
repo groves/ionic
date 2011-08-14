@@ -17,22 +17,22 @@ class PassthroughAvroColumnReader (source :Directory, field :Schema.Field) {
   private val in = source.open(field.name).read()
   private val decoder = DecoderFactory.get().binaryDecoder(in, null)
   private val reader = field.schema.getType match {
-    case NULL => (_ :IndexedRecord) => ()
-    case BOOLEAN => (rec :IndexedRecord) => rec.put(field.pos, decoder.readBoolean())
-/*    case INT => (rec :IndexedRecord) => encoder.writeInt(decoder.readInt())
-    case LONG => (rec :IndexedRecord) => encoder.writeLong(decoder.readLong())
-    case FLOAT => (rec :IndexedRecord) => encoder.writeFloat(decoder.readFloat())
-    case DOUBLE => (rec :IndexedRecord) => encoder.writeDouble(decoder.readDouble())
-    case STRING => (rec :IndexedRecord) => {
+    case NULL => () => ()
+    case BOOLEAN => () => decoder.readBoolean()
+    case INT => () => decoder.readInt()
+    case LONG => () => decoder.readLong()
+    case FLOAT => () => decoder.readFloat()
+    case DOUBLE => () => decoder.readDouble()
+    case STRING => () => {
       utf8Buf = decoder.readString(utf8Buf)
-      encoder.writeString(utf8Buf)
+      utf8Buf
     }
-    case BYTES => (rec :IndexedRecord) => {
+    case BYTES => () => {
       byteBuf = decoder.readBytes(byteBuf)
-      encoder.writeBytes(byteBuf)
-    }*/
+      byteBuf
+    }
     case x => throw new IllegalArgumentException("Unknown schema type: " + x)
   }
-  def read(rec :IndexedRecord) { reader(rec) }
+  def read(rec :IndexedRecord) { rec.put(field.pos, reader()) }
   def close() { in.close() }
 }

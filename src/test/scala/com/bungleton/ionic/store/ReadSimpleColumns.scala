@@ -14,8 +14,6 @@ class ReadSimpleColumns extends FunSuite {
     val root = Paths.makeMemoryFs()
     val schema = WriteSimpleColumns.makeSchema(List(("bool1", BOOLEAN)))
 
-    val toWrite = new GenericData.Record(schema)
-    toWrite.put("bool1", true)
     val baos = new ByteArrayOutputStream
     val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
     encoder.writeBoolean(true)
@@ -26,9 +24,35 @@ class ReadSimpleColumns extends FunSuite {
 
     val reader = new EntryReader(root)
     val toRead = new GenericData.Record(schema)
-    toRead.put("bool1", true)
     reader.read(toRead)
-    assert(toRead.get("bool1") == true)
+    assert(toRead.get("bool1") === true)
+    reader.close()
+  }
+
+  test("reading longs and strings") {
+    val root = Paths.makeMemoryFs()
+    val schema =
+        WriteSimpleColumns.makeSchema(List(("long1", LONG), ("string2", STRING)))
+
+    val baos = new ByteArrayOutputStream
+    val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
+    encoder.writeLong(1234)
+    encoder.writeString("Hi")
+    encoder.writeLong(-4321)
+    encoder.writeString("Bye")
+    val writer = new EntryWriter(schema, root)
+    val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
+    writer.write(decoder)
+    writer.close()
+
+    val reader = new EntryReader(root)
+    val toRead = new GenericData.Record(schema)
+    reader.read(toRead)
+    assert(toRead.get("long1") === 1234)
+    assert(toRead.get("string2").toString() === "Hi")
+    reader.read(toRead)
+    assert(toRead.get("long1") === -4321)
+    assert(toRead.get("string2").toString() === "Bye")
     reader.close()
   }
 }
