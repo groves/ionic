@@ -1,5 +1,6 @@
 package com.bungleton.ionic.server
 
+import org.scalatest.FunSuite
 import java.util.concurrent.CountDownLatch
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
@@ -18,11 +19,9 @@ import org.jboss.netty.channel.local.DefaultLocalClientChannelFactory
 import org.jboss.netty.channel.local.LocalAddress
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.local.DefaultLocalServerChannelFactory
-import org.scalatest.testng.TestNGSuite
-import org.testng.annotations.Test
 
-class ConnectAndSchema extends TestNGSuite {
-  @Test def connectAndSchema () {
+class ConnectAndSchema extends FunSuite {
+  test("connect and send schema") {
     val addr = new LocalAddress(LocalAddress.EPHEMERAL)
     val serverBoot = new ServerBootstrap(new DefaultLocalServerChannelFactory())
     serverBoot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline()))
