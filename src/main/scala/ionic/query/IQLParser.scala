@@ -10,7 +10,9 @@ class IQLParser extends JavaTokenParsers {
 
   def columns: Parser[List[String]] = repsep(ident, ",")
 
-  def from: Parser[String] = "from" ~> ident
+  def qident: Parser[String] = "[\\w.]+".r
+
+  def from: Parser[String] = "from" ~> qident
 
   def where: Parser[Where] = "where" ~> rep(clause) ^^ (Where(_: _*))
 

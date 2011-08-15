@@ -17,7 +17,7 @@ import com.threerings.fisy.Paths
 
 object WriteSimpleColumns {
   def makeSchema(defs: List[Tuple2[String, Schema.Type]]): Schema = {
-    val rec = Schema.createRecord("testrec", "", "", false)
+    val rec = Schema.createRecord("Simple", "", "ionic", false)
     rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
     rec
   }
