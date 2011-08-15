@@ -1,0 +1,6 @@
+{
+    "type": "record",
+    "namespace": "ionic.store.series",
+    "name": "SeriesMetadata",
+    "fields": [ { "name": "entries", "type": "long"} ]
+}

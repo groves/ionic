@@ -14,20 +14,34 @@ import org.scalatest.FunSuite
 import com.threerings.fisy.Directory
 import com.threerings.fisy.Paths
 
+object ReadSimpleColumns {
+  def write(schema: Schema, numEntries: Int, enc: ((Encoder) => Unit)): Directory = {
+    val root = Paths.makeMemoryFs()
+    val baos = new ByteArrayOutputStream
+    enc(EncoderFactory.get().directBinaryEncoder(baos, null))
+    val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
+    val writer = new SeriesWriter(schema, root)
+    0 until numEntries foreach (_ => writer.write(decoder))
+    writer.close()
+    root
+  }
+}
+
 class ReadSimpleColumns extends FunSuite {
   test("reading booleans") {
     val schema = WriteSimpleColumns.makeSchema(List(("bool1", BOOLEAN)))
 
-    val root = write(schema, 3, (encoder) => {
+    val root = ReadSimpleColumns.write(schema, 3, (encoder) => {
       encoder.writeBoolean(true)
       encoder.writeBoolean(false)
       encoder.writeBoolean(false)
     })
 
     val reader = new SeriesReader(root)
-    assert(reader.read().get("bool1") === true)
-    assert(reader.read().get("bool1") === false)
-    assert(reader.read().get("bool1") === false)
+    assert(reader.next().get("bool1") === true)
+    assert(reader.next().get("bool1") === false)
+    assert(reader.next().get("bool1") === false)
+    assert(!reader.hasNext())
     reader.close()
   }
 
@@ -35,7 +49,7 @@ class ReadSimpleColumns extends FunSuite {
     val schema =
       WriteSimpleColumns.makeSchema(List(("long1", LONG), ("string2", STRING)))
 
-    val root = write(schema, 2, (encoder) => {
+    val root = ReadSimpleColumns.write(schema, 2, (encoder) => {
       encoder.writeLong(1234)
       encoder.writeString("Hi")
       encoder.writeLong(-4321)
@@ -56,7 +70,7 @@ class ReadSimpleColumns extends FunSuite {
     val schema =
       WriteSimpleColumns.makeSchema(List(("timestamp", LONG), ("string", STRING)))
 
-    val root = write(schema, 4, (encoder) => {
+    val root = ReadSimpleColumns.write(schema, 4, (encoder) => {
       encoder.writeLong(1234)
       encoder.writeString("Hi")
       encoder.writeLong(1234)
@@ -83,14 +97,4 @@ class ReadSimpleColumns extends FunSuite {
     reader.close()
   }
 
-  def write(schema: Schema, numEntries: Int, enc: ((Encoder) => Unit)): Directory = {
-    val root = Paths.makeMemoryFs()
-    val baos = new ByteArrayOutputStream
-    enc(EncoderFactory.get().directBinaryEncoder(baos, null))
-    val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
-    val writer = new SeriesWriter(schema, root)
-    0 until numEntries foreach (_ => writer.write(decoder))
-    writer.close()
-    root
-  }
 }
