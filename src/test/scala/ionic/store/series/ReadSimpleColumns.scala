@@ -1,6 +1,7 @@
 package ionic.store.series
 
 import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
@@ -16,14 +17,18 @@ import com.threerings.fisy.Paths
 
 object ReadSimpleColumns {
   def write(schema: Schema, numEntries: Int, enc: ((Encoder) => Unit)): Directory = {
-    val root = Paths.makeMemoryFs()
+    writeToFs(Paths.makeMemoryFs(), schema, numEntries, enc)
+  }
+
+  def writeToFs(fs: Directory, schema: Schema, numEntries: Int, enc: ((Encoder) => Unit)): Directory = {
+    val seriesDir = fs.navigate(schema.getFullName() + "/" + UUID.randomUUID().toString())
     val baos = new ByteArrayOutputStream
     enc(EncoderFactory.get().directBinaryEncoder(baos, null))
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
-    val writer = new SeriesWriter(schema, root)
+    val writer = new SeriesWriter(schema, seriesDir)
     0 until numEntries foreach (_ => writer.write(decoder))
     writer.close()
-    root
+    seriesDir
   }
 }
 
