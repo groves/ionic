@@ -1,4 +1,4 @@
-package ionic.server
+package ionic.client
 
 import org.apache.avro.io.BinaryData
 

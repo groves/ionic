@@ -2,6 +2,8 @@ package ionic.server
 
 import java.util.concurrent.CountDownLatch
 
+import ionic.client.AvroIntFrameDecoder
+import ionic.client.AvroIntLengthFieldPrepender
 import ionic.test.TestClientHandler
 
 import org.jboss.netty.bootstrap.ClientBootstrap

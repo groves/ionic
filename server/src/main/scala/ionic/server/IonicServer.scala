@@ -5,6 +5,9 @@ import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.util.concurrent.Executors
 
+import ionic.client.AvroIntFrameDecoder
+import ionic.client.AvroIntLengthFieldPrepender
+
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelFuture
