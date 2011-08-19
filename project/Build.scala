@@ -27,12 +27,14 @@ object IonicBuild extends Build {
   def sub (id :String, subSettings :Seq[Setting[_]] = Seq()) = Project(id, file(id),
     settings = buildSettings ++ subSettings ++ Seq(name := "ionic-" + id))
 
-  lazy val client = sub("client")
+  lazy val net = sub("net")
+
+  lazy val client = sub("client") dependsOn(net)
 
   lazy val store = sub("store", Seq(
     libraryDependencies ++= Seq("com.threerings" % "fisy" % "1.0-SNAPSHOT")))
 
-  lazy val server = sub("server") dependsOn(client, store)
+  lazy val server = sub("server") dependsOn(net, store)
 
-  lazy val ionic = Project("ionic", file(".")) aggregate(client, store, server)
+  lazy val ionic = Project("ionic", file(".")) aggregate(net, client, store, server)
 }

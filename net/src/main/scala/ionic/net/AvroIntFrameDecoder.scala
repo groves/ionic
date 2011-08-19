@@ -1,4 +1,4 @@
-package ionic.client
+package ionic.net
 
 import java.io.ByteArrayInputStream
 
