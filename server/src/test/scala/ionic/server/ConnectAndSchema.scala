@@ -20,7 +20,6 @@ class ConnectAndSchema extends FunSuite {
   test("connect and send schema") {
     val addr = new LocalAddress(LocalAddress.EPHEMERAL)
     val serverBoot = new ServerBootstrap(new DefaultLocalServerChannelFactory())
-    serverBoot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline()))
     serverBoot.setOption("localAddress", addr)
 
     val clientBoot = new ClientBootstrap(new DefaultLocalClientChannelFactory())
