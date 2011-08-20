@@ -16,24 +16,11 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 class TestClientHandler(latch: CountDownLatch) extends SimpleChannelUpstreamHandler {
   override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
     val chan = e.getChannel()
-    val schemaBuf = ChannelBuffers.dynamicBuffer(512)
-    var enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(schemaBuf), null)
-    enc.writeArrayStart()
-    enc.setItemCount(1)
-    enc.startItem()
+    val buf = ChannelBuffers.dynamicBuffer(512)
+    var enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
     enc.writeString(Event.SCHEMA$.toString())
-    enc.writeArrayEnd()
-    chan.write(schemaBuf)
-
-    val entryBuf = ChannelBuffers.dynamicBuffer(512)
-    enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(entryBuf), enc)
-    enc.writeInt(0)
-    enc.writeArrayStart()
-    enc.setItemCount(1)
-    enc.startItem()
-    val ev = new Event()
     new SpecificDatumWriter(Event.SCHEMA$).write(new Event(), enc)
-    chan.write(entryBuf)
+    chan.write(buf)
     latch.countDown()
   }
 }

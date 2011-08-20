@@ -1,5 +1,7 @@
 package ionic.server
 
+import scala.collection.mutable.Buffer
+import scala.collection.mutable.Map
 import java.util.UUID
 
 import ionic.store.series.SeriesWriter
@@ -16,18 +18,27 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
 import com.threerings.fisy.Directory
 
-class SeriesReceiver(schemas: IndexedSeq[Schema], entries: Directory)
+class SeriesReceiver(entries: Directory)
   extends SimpleChannelUpstreamHandler {
   private val factory = DecoderFactory.get()
-  private val writers = schemas.map(s => {
-    val subdir = s.getFullName() + "/" + UUID.randomUUID().toString()
-    new SeriesWriter(s, entries.navigate(subdir))
-  })
+  private val schemas: Map[Schema, Int] = Map()
+  private val writers: Buffer[SeriesWriter] = Buffer()
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
     val decoder = factory.directBinaryDecoder(in, null)
-    val idx = decoder.readInt()
-    writers(idx).write(decoder)
+    val schema = Schema.parse(decoder.readString(null).toString())
+
+    val writer = schemas.get(schema) match {
+      case Some(idx) => writers(idx)
+      case None => {
+        val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
+        println(entries.navigate(subdir))
+        writers += new SeriesWriter(schema, entries.navigate(subdir))
+        schemas.put(schema, writers.size)
+        writers.last
+      }
+    }
+    writer.write(decoder)
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {

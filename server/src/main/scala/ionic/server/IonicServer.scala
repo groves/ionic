@@ -24,7 +24,7 @@ class IonicServer(boot: ServerBootstrap, entries: Directory) {
     override def getPipeline() = {
       // TODO - add an executor since we're doing disk IO
       Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-        new SchemaReceiver(entries))
+        new SeriesReceiver(entries))
     }
   })
   val channel: Channel = boot.bind()

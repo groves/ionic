@@ -42,5 +42,7 @@ object IonicBuild extends Build {
 
   lazy val server = sub("server") dependsOn(net, store)
 
-  lazy val ionic = Project("ionic", file(".")) aggregate(net, client, store, server)
+  lazy val integration = sub("integration") dependsOn(server, client)
+
+  lazy val ionic = Project("ionic", file(".")) aggregate(net, client, store, server, integration)
 }
