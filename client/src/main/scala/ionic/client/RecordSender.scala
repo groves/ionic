@@ -2,8 +2,11 @@ package ionic.client
 
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import scala.actors.Actor
+import scala.actors.TIMEOUT
 
 import com.codahale.logula.Logging
 
@@ -24,10 +27,11 @@ class RecordSender(boot: ClientBootstrap) extends Actor with Logging {
   val queue: BlockingQueue[IndexedRecord] = new ArrayBlockingQueue(1024) // Arbitrary queue size
   var nettyCapacity: Int = 0 // This will eventually come from the number of nettywriter's contexts
   var netty: NettyWriter = new NettyWriter(this, boot)
+  var active: Boolean = true
   start
   def act() {
     netty.start() // Start netty now that we're ready to receive its messages
-    val sendIfQueued = {
+    def sendIfQueued() = {
       queue.poll() match {
         case null => ()
         case msg: IndexedRecord => {
@@ -36,7 +40,7 @@ class RecordSender(boot: ClientBootstrap) extends Actor with Logging {
         }
       }
     }
-    loop {
+    loopWhile(active) {
       react {
         case rec: IndexedRecord => {
           if (nettyCapacity > 0) {
@@ -48,13 +52,26 @@ class RecordSender(boot: ClientBootstrap) extends Actor with Logging {
         }
         case WriterReady(_) => {
           nettyCapacity += 1
-          sendIfQueued
+          sendIfQueued()
         }
+        case Shutdown(latch) => {
+          active = false
+          netty ! Shutdown(latch)
+        }
+        case msg => log.warn("RecordSender received unknown message: %s", msg)
       }
     }
   }
+
+  def shutdown() {
+    val latch = new CountDownLatch(1)
+    // TODO - drain queue
+    this ! Shutdown(latch)
+    latch.await(60, TimeUnit.SECONDS)
+  }
 }
 
+case class Shutdown(latch: CountDownLatch)
 case class WriterReady(writer: Actor)
 case class WriteSucceeded(ctx: NettyMsgContext)
 case class WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord)
@@ -63,15 +80,55 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with Cha
   var chan: Channel = null
   def act() {
     boot.connect().addListener(this) // Make the initial connection as we're ready to get the channel
-    loop {
-      react {
-        case chan: Channel => this.chan = chan
-        // TODO - cache a few contexts rather than creating every time
-        case rec: IndexedRecord => new NettyMsgContext(this).write(chan, rec)
-        case WriteSucceeded(ctx: NettyMsgContext) => listener ! WriterReady(this)
-        // TODO - reconnect, return rec to sender for spooling
-        case WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord) => listener ! WriterReady(this)
+    write()
+  }
+
+  def write(): Unit = react {
+    case chan: Channel => {
+      this.chan = chan
+      listener ! WriterReady(this)
+      write()
+    }
+    // TODO - cache a few contexts rather than creating every time
+    case rec: IndexedRecord => {
+      new NettyMsgContext(this).write(chan, rec)
+      write()
+    }
+    case WriteSucceeded(ctx: NettyMsgContext) => {
+      listener ! WriterReady(this)
+      write()
+    }
+    // TODO - reconnect, return rec to sender for spooling
+    case WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord) => {
+      listener ! WriterReady(this)
+      write()
+    }
+    case Shutdown(latch) =>
+      drain(latch)
+    case msg =>
+      log.warn("NettyWriter received unknown message: %s", msg)
+  }
+
+  def drain(latch: CountDownLatch): Unit = {
+    def close() = {
+      if (chan != null) {
+        chan.close()
       }
+      latch.countDown()
+    }
+    reactWithin(0) {
+      case rec: IndexedRecord =>
+        log.warn("Asked to write a record after receiving shutdown: %s", rec)
+      case Shutdown(_) =>
+        log.warn("Asked to shutdown multiple times. Ignoring latch")
+      case WriteSucceeded(_) =>
+        close()
+      case WriteFailed(_, _) =>
+        close()
+      case TIMEOUT =>
+        close()
+      case msg =>
+        log.warn("NettyWriter received unknown message: %s", msg)
     }
   }
 
