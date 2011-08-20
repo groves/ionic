@@ -4,7 +4,7 @@ import Keys._
 object IonicBuild extends Build {
   // common build configuration
   val buildSettings = Defaults.defaultSettings ++ ScalariformPlugin.settings ++ Seq(
-    organization := "com.bungleton",
+    organization := "com.bungleton.ionic",
     version := "0.1-SNAPSHOT",
     scalaVersion := "2.9.0-1",
     scalacOptions ++= Seq("-deprecation"),
@@ -31,7 +31,7 @@ object IonicBuild extends Build {
 
 
   def sub (id :String, subSettings :Seq[Setting[_]] = Seq()) = Project(id, file(id),
-    settings = buildSettings ++ subSettings ++ Seq(name := "ionic-" + id))
+    settings = buildSettings ++ subSettings ++ Seq(name := id))
 
   lazy val net = sub("net")
 
