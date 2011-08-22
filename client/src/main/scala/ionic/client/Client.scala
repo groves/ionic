@@ -1,10 +1,14 @@
 package ionic.client
 
 import java.net.InetSocketAddress
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 import scala.actors.Actor.actor
+
+import com.codahale.logula.Logging
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 
@@ -25,17 +29,24 @@ object Client {
     boot.setOption("remoteAddress", new InetSocketAddress(host, port))
     boot
   }
-
 }
 
-class Client(private val boot: ClientBootstrap) {
+class Client(private val boot: ClientBootstrap) extends Logging {
   def this(host: String, port: Int) = this(Client.makeBootstrap(host, port))
+  val queue: BlockingQueue[IndexedRecord] = new ArrayBlockingQueue(1024)
   boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
     new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder())))
-  val sender = new RecordSender(boot)
 
-  def insert(record: IndexedRecord) {
-    sender ! record
+  val sender = new RecordSender(queue, boot)
+
+  def insert(record: IndexedRecord, waitForSending: Boolean = false) {
+    if (waitForSending) {
+      queue.put(record)
+    } else if (!queue.offer(record)) {
+      log.warn("Queue overflowed")
+      return
+    }
+    sender ! QueueInserted
   }
 
   def shutdown() {

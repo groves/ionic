@@ -1,6 +1,5 @@
 package ionic.client
 
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -21,43 +20,34 @@ import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelFuture
 import org.jboss.netty.channel.ChannelFutureListener
 
-class RecordSender(boot: ClientBootstrap) extends Actor with Logging {
-  // TODO - spool overflow records to disk rather than an in-memory queue. That'll handle netork
-  // outages as well
-  val queue: BlockingQueue[IndexedRecord] = new ArrayBlockingQueue(1024) // Arbitrary queue size
-  var nettyCapacity: Int = 0 // This will eventually come from the number of nettywriter's contexts
-  var netty: NettyWriter = new NettyWriter(this, boot)
+case class QueueInserted()
+class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) extends Actor with Logging {
+  val netty: NettyWriter = new NettyWriter(this, boot)
+  var capacity: Int = 0
   var active: Boolean = true
   start
   def act() {
-    netty.start() // Start netty now that we're ready to receive its messages
-    def sendIfQueued() = {
+    def sendFromQueue() = {
       queue.poll() match {
         case null => ()
-        case msg: IndexedRecord => {
-          nettyCapacity -= 1
-          netty ! msg
+        case rec => {
+          capacity -= 1
+          netty ! rec
         }
       }
     }
     loopWhile(active) {
       react {
-        case rec: IndexedRecord => {
-          if (nettyCapacity > 0) {
-            nettyCapacity -= 1
-            netty ! rec
-          } else if (!queue.offer(rec)) {
-            log.warn("Overflowed message queue!")
+        case QueueInserted => {
+          if (capacity > 0) {
+            sendFromQueue()
           }
         }
         case WriterReady(_) => {
-          nettyCapacity += 1
-          sendIfQueued()
+          capacity += 1
+          sendFromQueue()
         }
-        case Shutdown(latch) => {
-          active = false
-          netty ! Shutdown(latch)
-        }
+        case Shutdown(latch) => netty ! Shutdown(latch)
         case msg => log.warn("RecordSender received unknown message: %s", msg)
       }
     }
@@ -65,7 +55,6 @@ class RecordSender(boot: ClientBootstrap) extends Actor with Logging {
 
   def shutdown() {
     val latch = new CountDownLatch(1)
-    // TODO - drain queue
     this ! Shutdown(latch)
     latch.await(60, TimeUnit.SECONDS)
   }
@@ -78,6 +67,7 @@ case class WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord)
 
 class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with ChannelFutureListener with Logging {
   var chan: Channel = null
+  start
   def act() {
     boot.connect().addListener(this) // Make the initial connection as we're ready to get the channel
     write()
