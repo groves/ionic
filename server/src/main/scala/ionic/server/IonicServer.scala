@@ -66,10 +66,8 @@ object IonicServer extends Logging {
   }
 
   def main(args: Array[String]) {
-    var acceptor = new ThreadFactoryBuilder().setNameFormat("ionic-server-acceptor-%d").build()
-    var worker = new ThreadFactoryBuilder().setNameFormat("ionic-server-worker-%d").build()
     val boot = new ServerBootstrap(new NioServerSocketChannelFactory(
-      Executors.newCachedThreadPool(acceptor), Executors.newCachedThreadPool(worker)))
+      Executors.newCachedThreadPool(), Executors.newCachedThreadPool()))
     boot.setOption("localAddress", new InetSocketAddress(port))
     val server = new IonicServer(boot, createTempDirectory())
     Signal.handle(new Signal("INT"), new SignalHandler() {
