@@ -26,16 +26,17 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
   var capacity: Int = 0
   var active: Boolean = true
   start
-  def act() {
-    def sendFromQueue() = {
-      queue.poll() match {
-        case null => ()
-        case rec => {
-          capacity -= 1
-          netty ! rec
-        }
-      }
+
+  def sendFromQueue(): Boolean = queue.poll() match {
+    case null => false
+    case rec => {
+      capacity -= 1
+      netty ! rec
+      true
     }
+  }
+
+  def act() {
     loopWhile(active) {
       react {
         case QueueInserted => {
@@ -47,10 +48,44 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
           capacity += 1
           sendFromQueue()
         }
-        case Shutdown(latch) => netty ! Shutdown(latch)
+        case Shutdown(latch) => {
+          active = false
+          drain(latch)
+        }
         case msg => log.warn("RecordSender received unknown message: %s", msg)
       }
     }
+  }
+
+  def drain(latch: CountDownLatch) {
+    reactWithin(10000) {
+      case QueueInserted => {
+        log.warn("Got queue insertion after being asked to shutdown")
+        drain(latch)
+      }
+      case WriterReady(_) => {
+        capacity += 1
+        if (!sendFromQueue()) {
+          netty ! Shutdown(latch)
+        } else {
+          drain(latch)
+        }
+      }
+      case TIMEOUT => {
+        log.warn("Didn't get a writer ready within 10 seconds, shutting down without finishing draining queue")
+        netty ! Shutdown(latch)
+      }
+      case Shutdown(latch) => {
+        log.warn("Asked to shutdown multiple times")
+        drain(latch)
+      }
+      case msg => {
+        log.warn("RecordSender received unknown message: %s", msg)
+        drain(latch)
+      }
+    }
+
+    netty ! Shutdown(latch)
   }
 
   def shutdown() {
@@ -67,6 +102,8 @@ case class WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord)
 
 class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with ChannelFutureListener with Logging {
   var chan: Channel = null
+  var ctxs: List[NettyMsgContext] = List(0 until 10).map(_ => new NettyMsgContext(this))
+  val initialLength = ctxs.length
   start
   def act() {
     boot.connect().addListener(this) // Make the initial connection as we're ready to get the channel
@@ -76,20 +113,22 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with Cha
   def write(): Unit = react {
     case chan: Channel => {
       this.chan = chan
-      listener ! WriterReady(this)
+      ctxs.foreach(_ => listener ! WriterReady(this))
       write()
     }
-    // TODO - cache a few contexts rather than creating every time
     case rec: IndexedRecord => {
-      new NettyMsgContext(this).write(chan, rec)
+      ctxs.head.write(chan, rec)
+      ctxs = ctxs.tail
       write()
     }
-    case WriteSucceeded(ctx: NettyMsgContext) => {
+    case WriteSucceeded(ctx) => {
+      ctxs = ctx :: ctxs
       listener ! WriterReady(this)
       write()
     }
     // TODO - reconnect, return rec to sender for spooling
-    case WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord) => {
+    case WriteFailed(ctx, rec) => {
+      ctxs = ctx :: ctxs
       listener ! WriterReady(this)
       write()
     }
@@ -106,19 +145,29 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with Cha
       }
       latch.countDown()
     }
-    reactWithin(0) {
+    if (ctxs.length == initialLength) {
+      close()
+      return
+    }
+    reactWithin(10000) {
       case rec: IndexedRecord =>
         log.warn("Asked to write a record after receiving shutdown: %s", rec)
+        drain(latch)
       case Shutdown(_) =>
-        log.warn("Asked to shutdown multiple times. Ignoring latch")
-      case WriteSucceeded(_) =>
-        close()
-      case WriteFailed(_, _) =>
-        close()
+        log.warn("Asked to shutdown multiple times. Ignoring additonal latch.")
+        drain(latch)
+      case WriteSucceeded(ctx) =>
+        ctxs = ctx :: ctxs
+        drain(latch)
+      case WriteFailed(ctx, _) =>
+        ctxs = ctx :: ctxs
+        drain(latch)
       case TIMEOUT =>
+        log.warn("Timed out waiting for messages to finish sending. Closing anyway.")
         close()
       case msg =>
         log.warn("NettyWriter received unknown message: %s", msg)
+        drain(latch)
     }
   }
 

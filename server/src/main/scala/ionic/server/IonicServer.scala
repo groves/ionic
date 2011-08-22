@@ -7,8 +7,6 @@ import java.util.concurrent.Executors
 
 import com.codahale.logula.Logging
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-
 import ionic.net.AvroIntFrameDecoder
 import ionic.net.AvroIntLengthFieldPrepender
 

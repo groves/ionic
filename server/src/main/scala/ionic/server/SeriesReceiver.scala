@@ -1,8 +1,9 @@
 package ionic.server
 
+import java.util.UUID
+
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.Map
-import java.util.UUID
 
 import ionic.store.series.SeriesWriter
 
@@ -23,6 +24,7 @@ class SeriesReceiver(entries: Directory)
   private val factory = DecoderFactory.get()
   private val schemas: Map[Schema, Int] = Map()
   private val writers: Buffer[SeriesWriter] = Buffer()
+  private var written: Int = 0
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
     val decoder = factory.directBinaryDecoder(in, null)
@@ -39,6 +41,10 @@ class SeriesReceiver(entries: Directory)
       }
     }
     writer.write(decoder)
+    written += 1
+    if (written % 10000 == 0) {
+      println("Wrote " + written)
+    }
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
