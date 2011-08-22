@@ -34,7 +34,7 @@ class SeriesReceiver(entries: Directory)
         val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
         println(entries.navigate(subdir))
         writers += new SeriesWriter(schema, entries.navigate(subdir))
-        schemas.put(schema, writers.size)
+        schemas.put(schema, writers.size - 1)
         writers.last
       }
     }
