@@ -36,6 +36,6 @@ class ConnectAndSchema extends FunSuite {
     connectFuture.awaitUninterruptibly()
     latch.await()
     connectFuture.getChannel.close()
-    server.close().awaitUninterruptibly()
+    server.shutdown()
   }
 }

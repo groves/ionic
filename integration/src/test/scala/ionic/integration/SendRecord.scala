@@ -1,13 +1,15 @@
 package ionic.integration
 
-import ionic.test.Event
-import ionic.server.IonicServer
 import ionic.client.Client
-import org.jboss.netty.channel.local.DefaultLocalClientChannelFactory
+import ionic.server.IonicServer
+import ionic.test.Event
+
 import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel.local.DefaultLocalServerChannelFactory
 import org.jboss.netty.bootstrap.ServerBootstrap
+import org.jboss.netty.channel.local.DefaultLocalClientChannelFactory
+import org.jboss.netty.channel.local.DefaultLocalServerChannelFactory
 import org.jboss.netty.channel.local.LocalAddress
+
 import org.scalatest.FunSuite
 
 class SendRecord extends FunSuite {
@@ -23,7 +25,6 @@ class SendRecord extends FunSuite {
     val client = new Client(clientBoot)
     client.insert(new Event())
     client.shutdown()
-    server.close().awaitUninterruptibly()
-
+    server.shutdown()
   }
 }
