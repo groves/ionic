@@ -24,7 +24,6 @@ case class QueueInserted()
 class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with Logging {
   val netty: NettyWriter = new NettyWriter(this, boot, mapper)
   var capacity: Int = 0
-  var active: Boolean = true
   start
 
   def sendFromQueue(): Boolean = queue.poll() match {
@@ -36,56 +35,52 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, m
     }
   }
 
-  def act() {
-    loopWhile(active) {
-      react {
-        case QueueInserted => {
-          if (capacity > 0) {
-            sendFromQueue()
-          }
-        }
-        case WriterReady(_) => {
-          capacity += 1
-          sendFromQueue()
-        }
-        case Shutdown(latch) => {
-          active = false
-          drain(latch)
-        }
-        case msg => log.warn("RecordSender received unknown message: %s", msg)
+  def act() = react {
+    case QueueInserted => {
+      if (capacity > 0) {
+        sendFromQueue()
       }
+      act()
+    }
+    case WriterReady(_) => {
+      capacity += 1
+      sendFromQueue()
+      act()
+    }
+    case Shutdown(latch) => {
+      drain(latch)
+    }
+    case msg => {
+      log.warn("RecordSender received unknown message: %s", msg)
+      act()
     }
   }
 
-  def drain(latch: CountDownLatch) {
-    reactWithin(10000) {
-      case QueueInserted => {
-        log.warn("Got queue insertion after being asked to shutdown")
-        drain(latch)
-      }
-      case WriterReady(_) => {
-        capacity += 1
-        if (!sendFromQueue()) {
-          netty ! Shutdown(latch)
-        } else {
-          drain(latch)
-        }
-      }
-      case TIMEOUT => {
-        log.warn("Didn't get a writer ready within 10 seconds, shutting down without finishing draining queue")
+  def drain(latch: CountDownLatch): Unit = reactWithin(10000) {
+    case QueueInserted => {
+      log.warn("Got queue insertion after being asked to shutdown")
+      drain(latch)
+    }
+    case WriterReady(_) => {
+      capacity += 1
+      if (!sendFromQueue()) {
         netty ! Shutdown(latch)
-      }
-      case Shutdown(latch) => {
-        log.warn("Asked to shutdown multiple times")
-        drain(latch)
-      }
-      case msg => {
-        log.warn("RecordSender received unknown message: %s", msg)
+      } else {
         drain(latch)
       }
     }
-
-    netty ! Shutdown(latch)
+    case TIMEOUT => {
+      log.warn("Didn't get a writer ready within 10 seconds, shutting down without finishing draining queue")
+      netty ! Shutdown(latch)
+    }
+    case Shutdown(latch) => {
+      log.warn("Asked to shutdown multiple times")
+      drain(latch)
+    }
+    case msg => {
+      log.warn("RecordSender received unknown message: %s", msg)
+      drain(latch)
+    }
   }
 
   def shutdown() {
