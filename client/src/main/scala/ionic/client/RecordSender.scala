@@ -196,6 +196,7 @@ class NettyMsgContext(writer: Actor) extends ChannelFutureListener with Logging 
   }
 
   override def operationComplete(future: ChannelFuture) {
+    buf.clear()
     if (future.isSuccess()) {
       writer ! WriteSucceeded(this)
     } else if (future.getCause() != null) { // Failure! Dreaded, inevitable failure!
