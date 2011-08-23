@@ -18,6 +18,7 @@ class TestClientHandler(latch: CountDownLatch) extends SimpleChannelUpstreamHand
     val chan = e.getChannel()
     val buf = ChannelBuffers.dynamicBuffer(512)
     var enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
+    enc.writeInt(0)
     enc.writeString(Event.SCHEMA$.toString())
     new SpecificDatumWriter(Event.SCHEMA$).write(new Event(), enc)
     chan.write(buf)

@@ -34,10 +34,11 @@ object Client {
 class Client(private val boot: ClientBootstrap) extends Logging {
   def this(host: String, port: Int) = this(Client.makeBootstrap(host, port))
   val queue: BlockingQueue[IndexedRecord] = new ArrayBlockingQueue(1024)
+  val mapper: SchemaMapper = new SchemaMapper()
   boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
-    new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder())))
+    new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(), mapper)))
 
-  val sender = new RecordSender(queue, boot)
+  val sender = new RecordSender(queue, boot, mapper)
 
   def insert(record: IndexedRecord, waitForSending: Boolean = false) {
     if (waitForSending) {

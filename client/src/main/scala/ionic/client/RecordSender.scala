@@ -21,8 +21,8 @@ import org.jboss.netty.channel.ChannelFuture
 import org.jboss.netty.channel.ChannelFutureListener
 
 case class QueueInserted()
-class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) extends Actor with Logging {
-  val netty: NettyWriter = new NettyWriter(this, boot)
+class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with Logging {
+  val netty: NettyWriter = new NettyWriter(this, boot, mapper)
   var capacity: Int = 0
   var active: Boolean = true
   start
@@ -100,9 +100,9 @@ case class WriterReady(writer: Actor)
 case class WriteSucceeded(ctx: NettyMsgContext)
 case class WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord)
 
-class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with ChannelFutureListener with Logging {
+class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with ChannelFutureListener with Logging {
   var chan: Channel = null
-  var ctxs: List[NettyMsgContext] = List(0 until 10).map(_ => new NettyMsgContext(this))
+  var ctxs: List[NettyMsgContext] = List(0 until 10).map(_ => new NettyMsgContext(this, mapper))
   val initialLength = ctxs.length
   start
   def act() {
@@ -182,14 +182,23 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap) extends Actor with Cha
   }
 }
 
-class NettyMsgContext(writer: Actor) extends ChannelFutureListener with Logging {
+class NettyMsgContext(writer: Actor, mapper: SchemaMapper) extends ChannelFutureListener with Logging {
   val buf = ChannelBuffers.dynamicBuffer(512)
   val enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
   var rec: IndexedRecord = null
 
   def write(c: Channel, record: IndexedRecord) {
     rec = record
-    enc.writeString(record.getSchema().toString())
+    mapper(record.getSchema().getFullName()) match {
+      case Some(idx) => {
+        enc.writeInt(1)
+        enc.writeLong(idx)
+      }
+      case None => {
+        enc.writeInt(0)
+        enc.writeString(record.getSchema().toString())
+      }
+    }
     // TODO - cache writers per schema
     new SpecificDatumWriter(record.getSchema).write(record, enc)
     c.write(buf).addListener(this)
