@@ -31,11 +31,16 @@ class ConnectAndSchema extends FunSuite {
       }
     })
 
-    val server = new IonicServer(serverBoot, IonicServer.createTempDirectory())
-    val connectFuture = clientBoot.connect(addr)
-    connectFuture.awaitUninterruptibly()
-    latch.await()
-    connectFuture.getChannel.close()
-    server.shutdown()
+    val base = IonicServer.createTempDirectory()
+    try {
+      val server = new IonicServer(serverBoot, base)
+      val connectFuture = clientBoot.connect(addr)
+      connectFuture.awaitUninterruptibly()
+      latch.await()
+      connectFuture.getChannel.close()
+      server.shutdown()
+    } finally {
+      base.delete()
+    }
   }
 }
