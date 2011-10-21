@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import com.typesafe.sbtscalariform.ScalariformPlugin
 
 object IonicBuild extends Build {
   // common build configuration
@@ -19,14 +20,7 @@ object IonicBuild extends Build {
 
     resolvers ++= Seq(
       "Local Maven Repository" at Path.userHome.asURL + "/.m2/repository",
-      "codahale" at "http://repo.codahale.com"),
-
-
-    // this hackery causes publish-local to install to ~/.m2/repository instead of ~/.ivy
-    otherResolvers := Seq(Resolver.file("dotM2", file(Path.userHome + "/.m2/repository"))),
-    publishLocalConfiguration <<= (packagedArtifacts, deliverLocal, ivyLoggingLevel) map {
-      (arts, _, level) => new PublishConfiguration(None, "dotM2", arts, level)
-    }
+      "codahale" at "http://repo.codahale.com")
   )
 
 
