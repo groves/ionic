@@ -24,8 +24,7 @@ import org.scalatest.OneInstancePerTest
 import com.threerings.fisy.Directory
 
 class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
-  Logging.configure { log => log.level = Level.INFO }
-
+  Logging.configure { log => log.level = Level.WARN }
   val base: Directory = IonicServer.createTempDirectory()
 
   val addr = new LocalAddress(LocalAddress.EPHEMERAL)

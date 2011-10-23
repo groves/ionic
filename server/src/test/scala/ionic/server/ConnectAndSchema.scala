@@ -2,9 +2,13 @@ package ionic.server
 
 import java.util.concurrent.CountDownLatch
 
+import com.codahale.logula.Logging
+
 import ionic.net.AvroIntFrameDecoder
 import ionic.net.AvroIntLengthFieldPrepender
 import ionic.test.TestClientHandler
+
+import org.apache.log4j.Level
 
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.bootstrap.ServerBootstrap
@@ -18,6 +22,7 @@ import org.scalatest.FunSuite
 
 class ConnectAndSchema extends FunSuite {
   test("connect and send schema") {
+    Logging.configure { log => log.level = Level.WARN }
     val addr = new LocalAddress(LocalAddress.EPHEMERAL)
     val serverBoot = new ServerBootstrap(new DefaultLocalServerChannelFactory())
     serverBoot.setOption("localAddress", addr)

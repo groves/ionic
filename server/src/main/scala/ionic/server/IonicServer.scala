@@ -31,7 +31,6 @@ import com.threerings.fisy.impl.local.LocalDirectory
 
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */
 class IonicServer(boot: ServerBootstrap, entries: Directory) extends Logging {
-  Logging.configure { log => log.level = Level.INFO }
   val allChannels = new DefaultChannelGroup()
   val tracker = new SimpleChannelUpstreamHandler() {
     override def channelOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
@@ -45,7 +44,7 @@ class IonicServer(boot: ServerBootstrap, entries: Directory) extends Logging {
         new SeriesReceiver(entries), tracker)
     }
   })
-  log.info("Binding")
+  log.info("Binding to %s", boot.getOption("localAddress"))
   val channel: Channel = boot.bind()
   val address: SocketAddress = channel.getLocalAddress
 
@@ -66,6 +65,7 @@ object IonicServer extends Logging {
   }
 
   def main(args: Array[String]) {
+    Logging.configure { log => log.level = Level.INFO }
     val boot = new ServerBootstrap(new NioServerSocketChannelFactory(
       Executors.newCachedThreadPool(), Executors.newCachedThreadPool()))
     boot.setOption("localAddress", new InetSocketAddress(port))

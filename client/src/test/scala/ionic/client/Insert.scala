@@ -20,7 +20,7 @@ import org.scalatest.FunSuite
 
 class Insert extends FunSuite {
   test("insert") {
-    Logging.configure { log => log.level = Level.INFO }
+    Logging.configure { log => log.level = Level.WARN }
     val addr = new LocalAddress(LocalAddress.EPHEMERAL)
     val serverBoot = new ServerBootstrap(new DefaultLocalServerChannelFactory())
     serverBoot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(new Up())))

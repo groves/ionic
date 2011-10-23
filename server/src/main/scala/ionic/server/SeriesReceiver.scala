@@ -27,7 +27,6 @@ class SeriesReceiver(entries: Directory)
   private val factory = DecoderFactory.get()
   private val schemas: Map[String, Int] = Map()
   private val writers: Buffer[SeriesWriter] = Buffer()
-  private var written: Int = 0
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
     val decoder = factory.directBinaryDecoder(in, null)
@@ -40,7 +39,6 @@ class SeriesReceiver(entries: Directory)
           case Some(idx) => writers(idx)
           case None => {
             val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
-            println(entries.navigate(subdir))
             writers += new SeriesWriter(schema, entries.navigate(subdir))
             schemas.put(schema.getFullName(), writers.size - 1)
             val buf = ChannelBuffers.dynamicBuffer(512)
@@ -55,10 +53,6 @@ class SeriesReceiver(entries: Directory)
       case 1 => writers(decoder.readInt())
     }
     writer.write(decoder)
-    written += 1
-    if (written % 10000 == 0) {
-      println("Wrote " + written)
-    }
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
