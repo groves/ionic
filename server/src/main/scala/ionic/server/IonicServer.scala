@@ -3,6 +3,7 @@ package ionic.server
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.SocketAddress
+import java.util.Random
 import java.util.concurrent.Executors
 
 import com.codahale.logula.Logging
@@ -58,7 +59,8 @@ object IonicServer extends Logging {
   val port = 10713
 
   def createTempDirectory(): Directory = {
-    val dir = new File(System.getProperty("java.io.tmpdir"), "ionic-entries")
+    val dir = new File(System.getProperty("java.io.tmpdir"),
+      "ionic-entries" + new Random().nextInt())
     dir.mkdir()
     new LocalDirectory(dir)
   }
