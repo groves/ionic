@@ -8,6 +8,8 @@ import scala.collection.mutable.Map
 import ionic.store.series.SeriesWriter
 
 import org.apache.avro.Schema
+import org.apache.avro.io.BinaryDecoder
+import org.apache.avro.io.BinaryEncoder
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.io.EncoderFactory
 
@@ -24,12 +26,16 @@ import com.threerings.fisy.Directory
 
 class SeriesReceiver(entries: Directory)
   extends SimpleChannelUpstreamHandler {
-  private val factory = DecoderFactory.get()
+  private val decoderFactory = DecoderFactory.get()
+  private var decoder: BinaryDecoder = null
+  private val encoderFactory = EncoderFactory.get()
+  private var encoder: BinaryEncoder = null
   private val schemas: Map[String, Int] = Map()
   private val writers: Buffer[SeriesWriter] = Buffer()
+
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
-    val decoder = factory.directBinaryDecoder(in, null)
+    decoder = decoderFactory.directBinaryDecoder(in, decoder)
     val writer = decoder.readLong() match {
       case 0 => {
         val schema = Schema.parse(decoder.readString(null).toString())
@@ -41,11 +47,12 @@ class SeriesReceiver(entries: Directory)
             val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
             writers += new SeriesWriter(schema, entries.navigate(subdir))
             schemas.put(schema.getFullName(), writers.size - 1)
-            val buf = ChannelBuffers.dynamicBuffer(512)
-            val enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
-            enc.writeString(schema.getFullName)
-            enc.writeInt(writers.size - 1)
-            ctx.getChannel().write(buf)
+            val outbuf = ChannelBuffers.dynamicBuffer(512)
+            val outstream = new ChannelBufferOutputStream(outbuf)
+            encoder = encoderFactory.directBinaryEncoder(outstream, encoder)
+            encoder.writeString(schema.getFullName)
+            encoder.writeInt(writers.size - 1)
+            ctx.getChannel().write(outbuf)
             writers.last
           }
         }
