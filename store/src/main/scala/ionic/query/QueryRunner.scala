@@ -1,8 +1,5 @@
 package ionic.query
 
-import java.lang.Iterable
-import java.util.Iterator
-
 import ionic.store.EntryReader
 
 import org.apache.avro.generic.GenericRecord

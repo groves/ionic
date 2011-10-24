@@ -2,8 +2,6 @@ package ionic.integration
 
 import com.codahale.logula.Logging
 
-import com.google.common.collect.Iterables
-
 import ionic.client.Client
 import ionic.server.IonicServer
 import ionic.store.EntryReader
@@ -22,10 +20,11 @@ import org.scalatest.FunSuite
 import org.scalatest.OneInstancePerTest
 
 import com.threerings.fisy.Directory
+import com.threerings.fisy.impl.local.LocalDirectory
 
 class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
   Logging.configure { log => log.level = Level.WARN }
-  val base: Directory = IonicServer.createTempDirectory()
+  val base: LocalDirectory = IonicServer.createTempDirectory()
 
   val addr = new LocalAddress(LocalAddress.EPHEMERAL)
 
@@ -45,13 +44,13 @@ class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
     (0 until 1000).foreach(_ => client.insert(new Event()))
     client.shutdown()
     server.shutdown()
-    assert(1000 === Iterables.size(new EntryReader("ionic.test.event", base)))
+    assert(1000 === new EntryReader("ionic.test.event", base).size)
   }
 
   test("send 5000 records from client to server at write rate") {
     (0 until 5000).foreach(_ => client.insert(new Event(), waitForSending = true))
     client.shutdown()
     server.shutdown()
-    assert(5000 === Iterables.size(new EntryReader("ionic.test.event", base)))
+    assert(5000 === new EntryReader("ionic.test.event", base).size)
   }
 }

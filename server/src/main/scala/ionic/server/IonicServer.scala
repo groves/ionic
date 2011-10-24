@@ -30,7 +30,7 @@ import com.threerings.fisy.Directory
 import com.threerings.fisy.impl.local.LocalDirectory
 
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */
-class IonicServer(boot: ServerBootstrap, entries: Directory) extends Logging {
+class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
   val allChannels = new DefaultChannelGroup()
   val tracker = new SimpleChannelUpstreamHandler() {
     override def channelOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
@@ -41,7 +41,7 @@ class IonicServer(boot: ServerBootstrap, entries: Directory) extends Logging {
     override def getPipeline() = {
       // TODO - add an executor since we're doing disk IO
       Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-        new SeriesReceiver(entries), tracker)
+        new SeriesReceiver(base.navigate("live")), tracker)
     }
   })
   log.info("Binding to %s", boot.getOption("localAddress"))
@@ -57,7 +57,7 @@ class IonicServer(boot: ServerBootstrap, entries: Directory) extends Logging {
 object IonicServer extends Logging {
   val port = 10713
 
-  def createTempDirectory(): Directory = {
+  def createTempDirectory(): LocalDirectory = {
     val dir = new File(System.getProperty("java.io.tmpdir"),
       "ionic-entries" + new Random().nextInt())
     dir.mkdir()

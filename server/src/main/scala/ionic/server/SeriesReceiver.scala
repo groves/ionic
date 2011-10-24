@@ -5,6 +5,8 @@ import java.util.UUID
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.Map
 
+import com.codahale.logula.Logging
+
 import ionic.store.series.SeriesWriter
 
 import org.apache.avro.Schema
@@ -23,18 +25,20 @@ import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
 import com.threerings.fisy.Directory
+import com.threerings.fisy.impl.local.LocalDirectory
 
-class SeriesReceiver(entries: Directory)
-  extends SimpleChannelUpstreamHandler {
+class SeriesReceiver(entries: LocalDirectory)
+  extends SimpleChannelUpstreamHandler with Logging {
   private val decoderFactory = DecoderFactory.get()
   private var decoder: BinaryDecoder = null
   private val encoderFactory = EncoderFactory.get()
   private var encoder: BinaryEncoder = null
   private val schemas: Map[String, Int] = Map()
-  private val writers: Buffer[SeriesWriter] = Buffer()
+  private val writers: Buffer[ImmediateSeriesWriter] = Buffer()
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
-    val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
+    val inbuf = e.getMessage().asInstanceOf[ChannelBuffer]
+    val in = new ChannelBufferInputStream(inbuf)
     decoder = decoderFactory.directBinaryDecoder(in, decoder)
     val writer = decoder.readLong() match {
       case 0 => {
@@ -45,7 +49,7 @@ class SeriesReceiver(entries: Directory)
           case Some(idx) => writers(idx)
           case None => {
             val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
-            writers += new SeriesWriter(schema, entries.navigate(subdir))
+            writers += new ImmediateSeriesWriter(schema, entries.navigate(subdir))
             schemas.put(schema.getFullName(), writers.size - 1)
             val outbuf = ChannelBuffers.dynamicBuffer(512)
             val outstream = new ChannelBufferOutputStream(outbuf)
@@ -59,7 +63,7 @@ class SeriesReceiver(entries: Directory)
       }
       case 1 => writers(decoder.readInt())
     }
-    writer.write(decoder)
+    writer.write(inbuf)
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
