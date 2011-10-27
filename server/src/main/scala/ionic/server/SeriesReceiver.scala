@@ -27,14 +27,14 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 import com.threerings.fisy.Directory
 import com.threerings.fisy.impl.local.LocalDirectory
 
-class SeriesReceiver(entries: LocalDirectory)
+class SeriesReceiver(base: LocalDirectory)
   extends SimpleChannelUpstreamHandler with Logging {
   private val decoderFactory = DecoderFactory.get()
   private var decoder: BinaryDecoder = null
   private val encoderFactory = EncoderFactory.get()
   private var encoder: BinaryEncoder = null
   private val schemas: Map[String, Int] = Map()
-  private val writers: Buffer[ImmediateSeriesWriter] = Buffer()
+  private val writers: Buffer[UnitedSeriesWriter] = Buffer()
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val inbuf = e.getMessage().asInstanceOf[ChannelBuffer]
@@ -49,7 +49,7 @@ class SeriesReceiver(entries: LocalDirectory)
           case Some(idx) => writers(idx)
           case None => {
             val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
-            writers += new ImmediateSeriesWriter(schema, entries.navigate(subdir))
+            writers += new UnitedSeriesWriter(schema, base)
             schemas.put(schema.getFullName(), writers.size - 1)
             val outbuf = ChannelBuffers.dynamicBuffer(512)
             val outstream = new ChannelBufferOutputStream(outbuf)

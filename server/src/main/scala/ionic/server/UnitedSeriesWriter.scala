@@ -1,11 +1,11 @@
 package ionic.server
 
-import java.io.OutputStreamWriter
 import java.io.RandomAccessFile
-
-import com.google.common.base.Charsets
+import java.util.UUID
 
 import ionic.store.series.SeriesMetadata
+import ionic.store.series.SeriesWriter
+import ionic.store.series.UnitedSeriesReader
 
 import org.apache.avro.Schema
 import org.apache.avro.io.DatumWriter
@@ -18,11 +18,12 @@ import org.jboss.netty.buffer.ChannelBufferInputStream
 
 import com.threerings.fisy.impl.local.LocalDirectory
 
-class ImmediateSeriesWriter(schema: Schema, dest: LocalDirectory) {
+class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
 
-  new OutputStreamWriter(dest.open("schema.avsc").write(), Charsets.UTF_8).
-    append(schema.toString(true)).
-    close()
+  private val dest =
+    base.navigate(UnitedSeriesReader.dir(schema.getFullName()) + "/" + UUID.randomUUID().toString())
+
+  SeriesWriter.writeSchema(schema, dest)
 
   private val series = new RandomAccessFile(dest.open("series").file(), "rwd").getChannel()
 

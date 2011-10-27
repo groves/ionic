@@ -5,24 +5,27 @@ import org.apache.avro.generic.GenericDatumReader
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DecoderFactory
-import org.apache.avro.specific.SpecificDatumReader
 
 import com.threerings.fisy.Directory
 
-class ImmediateSeriesReader(source: Directory)
+object UnitedSeriesReader {
+  val prefix = "united"
+
+  def dir(schema: Schema): String = dir(schema.getFullName)
+  def dir(name: String): String = prefix + "/" + name
+}
+
+class UnitedSeriesReader(source: Directory)
   extends Iterator[GenericRecord] {
-  private val schema = Schema.parse(source.open("schema.avsc").read())
-  private val metaDecoder =
-    DecoderFactory.get().jsonDecoder(SeriesMetadata.SCHEMA$, source.open("meta.avsc").read())
-  private val metaReader: DatumReader[SeriesMetadata] = new SpecificDatumReader(SeriesMetadata.SCHEMA$)
-  private val meta = metaReader.read(new SeriesMetadata(), metaDecoder)
+  private val schema = SeriesReader.readSchema(source)
+  private val meta = SeriesReader.readMeta(source)
   private val recordDecoder =
     DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
   private val recordReader = new GenericDatumReader[GenericRecord](schema)
   private var _read = 0
 
-  def hasNext(): Boolean = { _read != meta.entries }
-  def next(): GenericRecord = {
+  override def hasNext(): Boolean = _read != meta.entries
+  override def next(): GenericRecord = {
     assert(hasNext())
     read()
   }

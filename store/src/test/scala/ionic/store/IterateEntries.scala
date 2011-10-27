@@ -1,5 +1,6 @@
 package ionic.store
 
+import ionic.store.series.SplitSeriesReader
 import scala.collection.JavaConversions._
 
 import com.google.common.collect.Iterators

@@ -41,7 +41,7 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
     override def getPipeline() = {
       // TODO - add an executor since we're doing disk IO
       Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-        new SeriesReceiver(base.navigate("live")), tracker)
+        new SeriesReceiver(base), tracker)
     }
   })
   log.info("Binding to %s", boot.getOption("localAddress"))
