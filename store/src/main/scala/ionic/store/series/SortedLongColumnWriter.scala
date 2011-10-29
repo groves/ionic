@@ -12,7 +12,7 @@ class SortedLongColumnWriter(dest: Directory, field: Schema.Field) extends Colum
 
   private var previous: Long = 0
   private var offset: Long = 0
-  private var countAtPrevious: Long = 0
+  private var countAtPrevious: Int = 0
   private var closed: Boolean = false
 
   def write(decoder: Decoder) {
@@ -22,7 +22,7 @@ class SortedLongColumnWriter(dest: Directory, field: Schema.Field) extends Colum
     if (current != previous) {
       if (countAtPrevious > 0) {
         encoder.writeLong(offset)
-        encoder.writeLong(countAtPrevious)
+        encoder.writeInt(countAtPrevious)
       }
       offset = current - previous
       previous = current
@@ -35,7 +35,7 @@ class SortedLongColumnWriter(dest: Directory, field: Schema.Field) extends Colum
   def close() {
     if (countAtPrevious > 0) {
       encoder.writeLong(offset)
-      encoder.writeLong(countAtPrevious)
+      encoder.writeInt(countAtPrevious)
     }
     closed = true
     out.close()

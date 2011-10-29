@@ -8,9 +8,7 @@ import com.threerings.fisy.Directory
 
 class QueryRunner(query: String, root: Directory)
   extends Iterable[GenericRecord] {
-  val parsed: Query = new IQLParser().parse(query)
+  val parsed: Query = Query.parse(query)
 
-  def iterator(): Iterator[GenericRecord] = {
-    new EntryReader(parsed.from, root).iterator
-  }
+  def iterator(): Iterator[GenericRecord] = EntryReader(parsed, root).iterator
 }

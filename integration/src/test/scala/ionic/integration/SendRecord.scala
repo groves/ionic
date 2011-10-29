@@ -44,13 +44,13 @@ class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
     (0 until 1000).foreach(_ => client.insert(new Event()))
     client.shutdown()
     server.shutdown()
-    assert(1000 === new EntryReader("ionic.test.event", base).size)
+    assert(1000 === EntryReader("ionic.test.event", base).size)
   }
 
   test("send 5000 records from client to server at write rate") {
     (0 until 5000).foreach(_ => client.insert(new Event(), waitForSending = true))
     client.shutdown()
     server.shutdown()
-    assert(5000 === new EntryReader("ionic.test.event", base).size)
+    assert(5000 === EntryReader("ionic.test.event", base).size)
   }
 }

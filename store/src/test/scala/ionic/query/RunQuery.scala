@@ -12,6 +12,12 @@ class RunQuery extends FunSuite {
   test("extract all") {
     val fs = Paths.makeMemoryFs()
     IterateEntries.writeSeries(fs, 1234)
-    assert(3 === new QueryRunner("timestamp, playerId, score from ionic.Simple", fs).toList.size)
+    assert(3 === new QueryRunner("ionic.Simple", fs).size)
+  }
+
+  test("extract of value") {
+    val fs = Paths.makeMemoryFs()
+    IterateEntries.writeSeries(fs, 1234)
+    assert(2 === new QueryRunner("ionic.Simple where playerId = 2", fs).size)
   }
 }

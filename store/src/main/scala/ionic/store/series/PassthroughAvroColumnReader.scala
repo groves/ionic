@@ -12,16 +12,13 @@ import org.apache.avro.util.Utf8
 import com.threerings.fisy.Directory
 
 class PassthroughAvroColumnReader(source: Directory, field: Schema.Field)
-  extends ColumnReader {
+  extends AvroColumnReader(source, field) {
   private var utf8Buf = new Utf8
   private var byteBuf: ByteBuffer = null
-  private val in = source.open(field.name).read()
-  private val decoder = DecoderFactory.get().binaryDecoder(in, null)
   private val reader = field.schema.getType match {
     case NULL => () => ()
     case BOOLEAN => () => decoder.readBoolean()
     case INT => () => decoder.readInt()
-    case LONG => () => decoder.readLong()
     case FLOAT => () => decoder.readFloat()
     case DOUBLE => () => decoder.readDouble()
     case STRING => () => {
@@ -34,6 +31,9 @@ class PassthroughAvroColumnReader(source: Directory, field: Schema.Field)
     }
     case x => throw new IllegalArgumentException("Unknown schema type: " + x)
   }
-  def read(rec: IndexedRecord) { rec.put(field.pos, reader()) }
-  def close() { in.close() }
+  def read(rec: IndexedRecord, skip: Long) = {
+    (0L until skip).foreach({ _ => reader() })
+    rec.put(field.pos, reader())
+    Some(1L)
+  }
 }

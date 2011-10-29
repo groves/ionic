@@ -8,6 +8,8 @@ import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.Directory
 
+import ionic.query.Where
+
 object UnitedSeriesReader {
   val prefix = "united"
 
@@ -15,7 +17,7 @@ object UnitedSeriesReader {
   def dir(name: String): String = prefix + "/" + name
 }
 
-class UnitedSeriesReader(source: Directory)
+class UnitedSeriesReader(source: Directory, where: Where)
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
   private val meta = SeriesReader.readMeta(source)
