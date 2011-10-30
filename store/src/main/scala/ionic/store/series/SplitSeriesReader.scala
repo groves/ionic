@@ -9,7 +9,6 @@ import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
-import org.apache.avro.io.Decoder
 
 import com.threerings.fisy.Directory
 
@@ -26,19 +25,17 @@ class SplitSeriesReader(source: Directory, where: Where = Where())
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
   private val meta = SeriesReader.readMeta(source)
-  private val readers = schema.getFields.map(f => f.schema.getType match {
-    case LONG => {
+  private val readers = schema.getFields.map(f =>
+    if (f.schema.getType == LONG) {
       val conds = where.clauses.filter(_.f == f.name).collect({ case l: LongCond => l })
       if (f.name == "timestamp") {
         new SortedLongColumnReader(source, f, meta.entries, conds)
       } else {
         new AvroPrimitiveColumnReader(source, f, meta.entries, new AvroLongReader(conds))
       }
-    }
-    case BOOLEAN => new AvroPrimitiveColumnReader(source, f, meta.entries,
-      new BasicAvroPrimitiveReader((decoder: Decoder) => Some(decoder.readBoolean())))
-    case _ => new PassthroughAvroColumnReader(source, f)
-  })
+    } else {
+      new AvroPrimitiveColumnReader(source, f, meta.entries, AvroPrimitiveReader(f.schema.getType))
+    })
   private var _lookahead: Option[GenericRecord] = None
   private var _finished: Boolean = false
 

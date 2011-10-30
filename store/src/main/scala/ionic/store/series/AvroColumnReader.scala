@@ -1,11 +1,15 @@
 package ionic.store.series
 
+import java.nio.ByteBuffer
+
 import ionic.query.LongCond
 
 import org.apache.avro.Schema
+import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.IndexedRecord
 import org.apache.avro.io.Decoder
 import org.apache.avro.io.DecoderFactory
+import org.apache.avro.util.Utf8
 
 import com.threerings.fisy.Directory
 
@@ -32,6 +36,24 @@ class AvroPrimitiveColumnReader(source: Directory, field: Schema.Field, var entr
   }
 }
 
+object AvroPrimitiveReader {
+  def apply(t: Schema.Type) = {
+    if (t == STRING) {
+      new StringAvroPrimitiveReader()
+    } else if (t == BYTES) {
+      new BytesAvroPrimitiveReader()
+    } else {
+      val decoder = t match {
+        case BOOLEAN => (decoder: Decoder) => Some(decoder.readBoolean())
+        case INT => (decoder: Decoder) => Some(decoder.readInt())
+        case FLOAT => (decoder: Decoder) => Some(decoder.readFloat())
+        case DOUBLE => (decoder: Decoder) => Some(decoder.readDouble())
+      }
+      new BasicAvroPrimitiveReader(decoder)
+    }
+  }
+}
+
 trait AvroPrimitiveReader {
   def skip(decoder: Decoder) { read(decoder) }
   def read(decoder: Decoder): Option[Any]
@@ -48,4 +70,20 @@ class AvroLongReader(conds: Iterable[LongCond]) extends AvroPrimitiveReader {
 
 class BasicAvroPrimitiveReader(reader: ((Decoder) => Option[Any])) extends AvroPrimitiveReader {
   def read(decoder: Decoder) = reader(decoder)
+}
+
+class StringAvroPrimitiveReader extends AvroPrimitiveReader {
+  private var utf8Buf = new Utf8
+  def read(decoder: Decoder) = {
+    utf8Buf = decoder.readString(utf8Buf)
+    Some(utf8Buf)
+  }
+}
+
+class BytesAvroPrimitiveReader extends AvroPrimitiveReader {
+  private var byteBuf: ByteBuffer = null
+  def read(decoder: Decoder) = {
+    byteBuf = decoder.readBytes(byteBuf)
+    Some(byteBuf)
+  }
 }
