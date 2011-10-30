@@ -32,10 +32,12 @@ class SortedLongColumnReader(source: Directory, field: Schema.Field, var entries
     var read = 1L
     while (!conds.forall(_.meets(value))) {
       read += countAtValue
-      value += decoder.readLong()
       entries -= countAtValue
       if (entries == 0) return None
-      countAtValue = decoder.readLong()
+      value += decoder.readLong()
+      countAtValue = decoder.readLong() - 1
+      entries -= 1
+      read += 1
     }
     rec.put(field.pos, value)
     Some(read)

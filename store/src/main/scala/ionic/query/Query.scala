@@ -9,12 +9,9 @@ case class Where(val clauses: Clause*)
 
 abstract class Clause(val f: String)
 
-trait LongCond {
-  def meets(other: Long): Boolean
+case class LongCond(override val f: String, value: Long, pred: (Long, Long) => Boolean) extends Clause(f) {
+  def meets(other: Long): Boolean = pred(other, value)
 }
 
-case class StringEquals(override val f: String, val value: String) extends Clause(f)
-case class LongEquals(override val f: String, val value: Long) extends Clause(f) with LongCond {
-  override def meets(other: Long) = value == other
-}
 case class BooleanEquals(override val f: String, val value: Boolean) extends Clause(f)
+case class StringEquals(override val f: String, val value: String) extends Clause(f)
