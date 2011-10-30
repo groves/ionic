@@ -18,6 +18,6 @@ class RunQuery extends FunSuite {
   test("extract of value") {
     val fs = Paths.makeMemoryFs()
     IterateEntries.writeSeries(fs, 1234)
-    assert(2 === new QueryRunner("ionic.Simple where playerId = 2", fs).size)
+    assert(1 === new QueryRunner("ionic.Simple where playerId = 1", fs).size)
   }
 }

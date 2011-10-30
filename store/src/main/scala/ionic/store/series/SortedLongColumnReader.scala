@@ -1,6 +1,7 @@
 package ionic.store.series
 
 import ionic.query.LongCond
+
 import org.apache.avro.Schema
 import org.apache.avro.generic.IndexedRecord
 import org.apache.avro.io.DecoderFactory
@@ -17,7 +18,7 @@ class SortedLongColumnReader(source: Directory, field: Schema.Field, var entries
   private var closed: Boolean = false
 
   def read(rec: IndexedRecord, skip: Long): Option[Long] = {
-    assume(entries > 0)
+    if (entries == 0) return None
     var tillFirst = skip + 1 // Read one past the skip to get to the value we want
     while (tillFirst > countAtValue) {
       tillFirst -= countAtValue

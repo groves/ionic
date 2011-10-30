@@ -1,5 +1,7 @@
 package ionic.store.series
 
+import ionic.query.Where
+
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericDatumReader
 import org.apache.avro.generic.GenericRecord
@@ -7,8 +9,6 @@ import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.Directory
-
-import ionic.query.Where
 
 object UnitedSeriesReader {
   val prefix = "united"

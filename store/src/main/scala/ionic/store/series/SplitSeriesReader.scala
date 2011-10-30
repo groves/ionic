@@ -2,15 +2,16 @@ package ionic.store.series
 
 import scala.collection.JavaConversions._
 
+import ionic.query.LongCond
+import ionic.query.Where
+
 import org.apache.avro.Schema
+import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
+import org.apache.avro.io.Decoder
 
 import com.threerings.fisy.Directory
-
-import ionic.query.Where
-import ionic.query.LongCond
-import ionic.query.LongEquals
 
 object SplitSeriesReader {
   val prefix = "split"
@@ -19,31 +20,47 @@ object SplitSeriesReader {
   def dir(name: String): String = prefix + "/" + name
 }
 
-object NoneFound extends Exception {}
+object NoneFound extends Exception
 
 class SplitSeriesReader(source: Directory, where: Where = Where())
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
   private val meta = SeriesReader.readMeta(source)
-  private val readers = schema.getFields.map(f =>
-    if (f.schema.getType == Schema.Type.LONG) {
+  private val readers = schema.getFields.map(f => f.schema.getType match {
+    case LONG => {
       val conds = where.clauses.filter(_.f == f.name).collect({ case l: LongCond => l })
       if (f.name == "timestamp") {
         new SortedLongColumnReader(source, f, meta.entries, conds)
       } else {
-        new LongAvroColumnReader(source, f, conds)
+        new AvroPrimitiveColumnReader(source, f, meta.entries, new AvroLongReader(conds))
       }
-    } else {
-      new PassthroughAvroColumnReader(source, f)
-    })
-  private var _read = 0L
+    }
+    case BOOLEAN => new AvroPrimitiveColumnReader(source, f, meta.entries,
+      new BasicAvroPrimitiveReader((decoder: Decoder) => Some(decoder.readBoolean())))
+    case _ => new PassthroughAvroColumnReader(source, f)
+  })
+  private var _lookahead: Option[GenericRecord] = None
+  private var _finished: Boolean = false
 
-  def hasNext(): Boolean =
-    { _read != meta.entries }
+  def hasNext(): Boolean = !_finished && (_lookahead match {
+    case Some(_) => true
+    case None => {
+      try {
+        _lookahead = Some(read())
+      } catch {
+        case NoneFound => _finished = true
+      }
+      _lookahead != None
+    }
+  })
+
   def next(): GenericRecord = {
     assert(hasNext())
-    read()
+    val looked = _lookahead.get
+    _lookahead = None
+    looked
   }
+
   def read(old: GenericRecord = null): GenericRecord = {
     val record = if (old != null) { old } else { new GenericData.Record(schema) }
     var positions = scala.collection.mutable.IndexedSeq.fill(readers.size)(-1L)
@@ -62,7 +79,6 @@ class SplitSeriesReader(source: Directory, where: Where = Where())
           }
         })
     } while (initialPosition != readPosition)
-    _read += readPosition + 1
     record
   }
   def close() { readers.foreach(_.close()) }

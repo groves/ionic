@@ -1,9 +1,9 @@
 package ionic.store
 
-import ionic.query.Query
 import scala.collection.IterableView
 import scala.collection.JavaConversions._
 
+import ionic.query.Query
 import ionic.store.series.SplitSeriesReader
 import ionic.store.series.UnitedSeriesReader
 
