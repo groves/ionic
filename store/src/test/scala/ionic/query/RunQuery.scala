@@ -27,4 +27,6 @@ class RunQuery extends FunSuite {
   }
   test("extract le than value") { assert(2 === run("ionic.Simple where timestamp <= 1234").size) }
   test("extract double gt") { assert(2 === run("ionic.Simple where score > .25").size) }
+  test("extract with and") { assert(1 === run("ionic.Simple where timestamp <= 1234 and playerId > 1").size) }
+  test("extract and excludes") { assert(0 === run("ionic.Simple where timestamp <= 1234 and playerId > 3").size) }
 }
