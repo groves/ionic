@@ -13,5 +13,9 @@ case class LongCond(override val f: String, value: Long, pred: (Long, Long) => B
   def meets(other: Long): Boolean = pred(other, value)
 }
 
+case class DoubleCond(override val f: String, value: Double, pred: (Double, Double) => Boolean) extends Clause(f) {
+  def meets(other: Double): Boolean = pred(other, value)
+}
+
 case class BooleanEquals(override val f: String, val value: Boolean) extends Clause(f)
 case class StringEquals(override val f: String, val value: String) extends Clause(f)

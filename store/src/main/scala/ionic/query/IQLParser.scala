@@ -26,6 +26,18 @@ class IQLParser extends JavaTokenParsers {
           case ">" => _ > _
         })
       }
+    }
+    | ident ~ "([!><]?=|<|>)".r ~ decimalNumber ^^ {
+      case f ~ p ~ d => {
+        DoubleCond(f, d.toDouble, p match {
+          case "=" => _ == _
+          case "!=" => _ != _
+          case ">=" => _ >= _
+          case "<=" => _ <= _
+          case "<" => _ < _
+          case ">" => _ > _
+        })
+      }
     })
 
   def boolean = ("true" ^^^ (true) | "false" ^^^ (false))

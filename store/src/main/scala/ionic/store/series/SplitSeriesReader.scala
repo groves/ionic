@@ -25,17 +25,20 @@ class SplitSeriesReader(source: Directory, where: Where = Where())
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
   private val meta = SeriesReader.readMeta(source)
-  private val readers = schema.getFields.map(f =>
+  private val readers = schema.getFields.map(f => {
+    val clausesForField = where.clauses.filter(_.f == f.name)
     if (f.schema.getType == LONG) {
-      val conds = where.clauses.filter(_.f == f.name).collect({ case l: LongCond => l })
+      val conds = clausesForField.collect({ case l: LongCond => l })
       if (f.name == "timestamp") {
         new SortedLongColumnReader(source, f, meta.entries, conds)
       } else {
         new AvroPrimitiveColumnReader(source, f, meta.entries, new AvroLongReader(conds))
       }
     } else {
-      new AvroPrimitiveColumnReader(source, f, meta.entries, AvroPrimitiveReader(f.schema.getType))
-    })
+      new AvroPrimitiveColumnReader(source, f, meta.entries,
+        AvroPrimitiveReader(f.schema.getType, clausesForField))
+    }
+  })
   private var _lookahead: Option[GenericRecord] = None
   private var _finished: Boolean = false
 

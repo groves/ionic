@@ -2,6 +2,8 @@ package ionic.store.series
 
 import java.nio.ByteBuffer
 
+import ionic.query.Clause
+import ionic.query.DoubleCond
 import ionic.query.LongCond
 
 import org.apache.avro.Schema
@@ -37,11 +39,15 @@ class AvroPrimitiveColumnReader(source: Directory, field: Schema.Field, var entr
 }
 
 object AvroPrimitiveReader {
-  def apply(t: Schema.Type) = {
+  def apply(t: Schema.Type, clauses: Iterable[Clause]) = {
     if (t == STRING) {
       new StringAvroPrimitiveReader()
     } else if (t == BYTES) {
       new BytesAvroPrimitiveReader()
+    } else if (t == DOUBLE) {
+      new AvroDoubleReader(clauses.collect({ case d: DoubleCond => d }))
+    } else if (t == FLOAT) {
+      new AvroFloatReader(clauses.collect({ case d: DoubleCond => d }))
     } else {
       val decoder = t match {
         case BOOLEAN => (decoder: Decoder) => Some(decoder.readBoolean())
@@ -63,6 +69,24 @@ class AvroLongReader(conds: Iterable[LongCond]) extends AvroPrimitiveReader {
   override def skip(decoder: Decoder) { decoder.readLong() }
   def read(decoder: Decoder): Option[Long] = {
     val value = decoder.readLong()
+    if (conds.exists(!_.meets(value))) None
+    else Some(value)
+  }
+}
+
+class AvroFloatReader(conds: Iterable[DoubleCond]) extends AvroPrimitiveReader {
+  override def skip(decoder: Decoder) { decoder.readFloat() }
+  def read(decoder: Decoder): Option[Float] = {
+    val value = decoder.readFloat()
+    if (conds.exists(!_.meets(value))) None
+    else Some(value)
+  }
+}
+
+class AvroDoubleReader(conds: Iterable[DoubleCond]) extends AvroPrimitiveReader {
+  override def skip(decoder: Decoder) { decoder.readDouble() }
+  def read(decoder: Decoder): Option[Double] = {
+    val value = decoder.readDouble()
     if (conds.exists(!_.meets(value))) None
     else Some(value)
   }
