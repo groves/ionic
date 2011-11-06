@@ -16,6 +16,7 @@ object EntryReader {
   def apply(query: Query, root: Directory): EntryReader = new EntryReader(query, root)
 }
 
+// TODO - return a subtrait of Iterable with close on it
 class EntryReader(query: Query, root: Directory) extends Iterable[GenericRecord] {
   val name = query.from
   def iterator(): Iterator[GenericRecord] = {
