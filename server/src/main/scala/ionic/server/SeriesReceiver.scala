@@ -41,6 +41,7 @@ class SeriesReceiver(base: LocalDirectory)
     val inbuf = e.getMessage().asInstanceOf[ChannelBuffer]
     val in = new ChannelBufferInputStream(inbuf)
     decoder = decoderFactory.directBinaryDecoder(in, decoder)
+    var postwrite: Function0[Unit] = () => {}
     val writer = decoder.readLong() match {
       case 0 => {
         val schemaUtf8: Utf8 = decoder.readString(null)
@@ -52,12 +53,16 @@ class SeriesReceiver(base: LocalDirectory)
             val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
             writers += new UnitedSeriesWriter(schema, base)
             schemas.put(schema, writers.size - 1)
-            val outbuf = ChannelBuffers.dynamicBuffer(512)
-            val outstream = new ChannelBufferOutputStream(outbuf)
-            encoder = encoderFactory.directBinaryEncoder(outstream, encoder)
-            encoder.writeString(schemaUtf8)
-            encoder.writeInt(writers.size - 1)
-            ctx.getChannel().write(outbuf)
+            // Don't send the success until the write succeeds
+            postwrite = () => {
+              val outbuf = ChannelBuffers.dynamicBuffer(512)
+              val outstream = new ChannelBufferOutputStream(outbuf)
+              encoder = encoderFactory.directBinaryEncoder(outstream, encoder)
+              encoder.writeBoolean(false)
+              encoder.writeString(schemaUtf8)
+              encoder.writeInt(writers.size - 1)
+              ctx.getChannel().write(outbuf)
+            }
             writers.last
           }
         }
@@ -65,6 +70,7 @@ class SeriesReceiver(base: LocalDirectory)
       case 1 => writers(decoder.readInt())
     }
     writer.write(inbuf)
+    postwrite()
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, e: ChannelStateEvent) {

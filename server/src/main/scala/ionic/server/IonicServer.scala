@@ -11,14 +11,18 @@ import com.codahale.logula.Logging
 import ionic.net.AvroIntFrameDecoder
 import ionic.net.AvroIntLengthFieldPrepender
 
+import org.apache.avro.io.EncoderFactory
 import org.apache.log4j.Level
 
 import org.jboss.netty.bootstrap.ServerBootstrap
+import org.jboss.netty.buffer.ChannelBufferOutputStream
+import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.ChannelPipelineFactory
 import org.jboss.netty.channel.ChannelStateEvent
 import org.jboss.netty.channel.Channels
+import org.jboss.netty.channel.ExceptionEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 import org.jboss.netty.channel.group.DefaultChannelGroup
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
@@ -27,6 +31,7 @@ import sun.misc.Signal
 import sun.misc.SignalHandler
 
 import com.threerings.fisy.Directory
+import com.threerings.fisy.OperationException
 import com.threerings.fisy.impl.local.LocalDirectory
 
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */
@@ -35,6 +40,23 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
   val tracker = new SimpleChannelUpstreamHandler() {
     override def channelOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
       allChannels.add(e.getChannel())
+    }
+
+    override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
+      e.getCause match {
+        case oe: OperationException => {
+          log.warn(oe, "Got io exception. Telling the client to buzz off.")
+        }
+        case e: Throwable => {
+          log.warn(e, "Got unknown exception. Telling the client to buzz off.")
+        }
+      }
+      val outbuf = ChannelBuffers.dynamicBuffer(512)
+      val outstream = new ChannelBufferOutputStream(outbuf)
+      val encoder = EncoderFactory.get().directBinaryEncoder(outstream, null)
+      encoder.writeBoolean(true)
+      encoder.writeString(e.getCause.getMessage)
+      ctx.getChannel().write(outbuf)
     }
   }
   boot.setPipelineFactory(new ChannelPipelineFactory() {

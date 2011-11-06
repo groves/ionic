@@ -53,4 +53,15 @@ class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
     server.shutdown()
     assert(5000 === EntryReader("ionic.test.event", base).size)
   }
+
+  test("attempt write on misconfigured server") {
+    Logging.configure { log => log.level = Level.ERROR }
+    base.file.setWritable(false)
+    (0 until 5).foreach(_ => client.insert(new Event()))
+    client.shutdown()
+    server.shutdown()
+    base.file.setWritable(true)
+    assert(0 === EntryReader("ionic.test.event", base).size)
+    assert(client.errored)
+  }
 }

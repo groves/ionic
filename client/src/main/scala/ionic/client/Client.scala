@@ -40,7 +40,10 @@ class Client(private val boot: ClientBootstrap) extends Logging {
 
   val sender = new RecordSender(queue, boot, mapper)
 
+  def errored() = mapper.errored
+
   def insert(record: IndexedRecord, waitForSending: Boolean = false) {
+    if (mapper.errored) return // Mapper warned about it
     if (waitForSending) {
       queue.put(record)
     } else if (!queue.offer(record)) {
