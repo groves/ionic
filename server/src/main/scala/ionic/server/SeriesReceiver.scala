@@ -14,6 +14,7 @@ import org.apache.avro.io.BinaryDecoder
 import org.apache.avro.io.BinaryEncoder
 import org.apache.avro.io.DecoderFactory
 import org.apache.avro.io.EncoderFactory
+import org.apache.avro.util.Utf8
 
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.buffer.ChannelBufferInputStream
@@ -33,7 +34,7 @@ class SeriesReceiver(base: LocalDirectory)
   private var decoder: BinaryDecoder = null
   private val encoderFactory = EncoderFactory.get()
   private var encoder: BinaryEncoder = null
-  private val schemas: Map[String, Int] = Map()
+  private val schemas: Map[Schema, Int] = Map()
   private val writers: Buffer[UnitedSeriesWriter] = Buffer()
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
@@ -42,19 +43,19 @@ class SeriesReceiver(base: LocalDirectory)
     decoder = decoderFactory.directBinaryDecoder(in, decoder)
     val writer = decoder.readLong() match {
       case 0 => {
-        val schema = Schema.parse(decoder.readString(null).toString())
+        val schemaUtf8: Utf8 = decoder.readString(null)
+        val schema = Schema.parse(schemaUtf8.toString())
 
-        // TODO - check for redefinition
-        schemas.get(schema.getFullName()) match {
+        schemas.get(schema) match {
           case Some(idx) => writers(idx)
           case None => {
             val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
             writers += new UnitedSeriesWriter(schema, base)
-            schemas.put(schema.getFullName(), writers.size - 1)
+            schemas.put(schema, writers.size - 1)
             val outbuf = ChannelBuffers.dynamicBuffer(512)
             val outstream = new ChannelBufferOutputStream(outbuf)
             encoder = encoderFactory.directBinaryEncoder(outstream, encoder)
-            encoder.writeString(schema.getFullName)
+            encoder.writeString(schemaUtf8)
             encoder.writeInt(writers.size - 1)
             ctx.getChannel().write(outbuf)
             writers.last

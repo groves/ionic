@@ -7,6 +7,7 @@ import scala.collection.mutable.ConcurrentMap
 
 import com.codahale.logula.Logging
 
+import org.apache.avro.Schema
 import org.apache.avro.io.DecoderFactory
 
 import org.jboss.netty.buffer.ChannelBuffer
@@ -16,14 +17,14 @@ import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
 class SchemaMapper extends SimpleChannelUpstreamHandler with Logging {
-  private val schemas: ConcurrentMap[String, Long] = new ConcurrentHashMap[String, Long]
-  def apply(fullName: String): Option[Long] = schemas.get(fullName)
+  private val schemas: ConcurrentMap[Schema, Long] = new ConcurrentHashMap[Schema, Long]
+  def apply(schema: Schema): Option[Long] = schemas.get(schema)
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val in = new ChannelBufferInputStream(e.getMessage().asInstanceOf[ChannelBuffer])
     val decoder = DecoderFactory.get().directBinaryDecoder(in, null)
-    val fullName = decoder.readString(null).toString()
+    val schema = Schema.parse(decoder.readString(null).toString())
     val idx = decoder.readLong()
-    log.info("Mapped '%s' to '%s'", fullName, idx)
-    schemas(fullName) = idx
+    log.info("Mapping '%s' to '%s'", schema, idx)
+    schemas(schema) = idx
   }
 }

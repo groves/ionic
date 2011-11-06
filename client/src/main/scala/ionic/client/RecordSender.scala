@@ -184,7 +184,7 @@ class NettyMsgContext(writer: Actor, mapper: SchemaMapper) extends ChannelFuture
 
   def write(c: Channel, record: IndexedRecord) {
     rec = record
-    mapper(record.getSchema().getFullName()) match {
+    mapper(record.getSchema()) match {
       case Some(idx) => {
         enc.writeInt(1)
         enc.writeLong(idx)
