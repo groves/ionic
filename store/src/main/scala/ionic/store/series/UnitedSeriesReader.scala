@@ -24,7 +24,7 @@ class UnitedSeriesReader(source: Directory, where: Where)
   private val recordDecoder =
     DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
   private val recordReader = new GenericDatumReader[GenericRecord](schema)
-  private var _read = 0
+  private var _read = 0L
 
   override def hasNext(): Boolean = _read != meta.entries
   override def next(): GenericRecord = {
@@ -33,10 +33,12 @@ class UnitedSeriesReader(source: Directory, where: Where)
   }
   def read(old: GenericRecord = null): GenericRecord = {
     _read += 1
-    recordReader.read(old, recordDecoder)
+    val value = recordReader.read(old, recordDecoder)
+    if (_read == meta.entries) close()
+    value
   }
   def close() {
-    _read = meta.entries.asInstanceOf[Int]
+    _read = meta.entries
     recordDecoder.inputStream.close()
   }
 

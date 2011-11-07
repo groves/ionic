@@ -48,7 +48,10 @@ class SplitSeriesReader(source: Directory, where: Where = Where())
       try {
         _lookahead = Some(read())
       } catch {
-        case NoneFound => _finished = true
+        case NoneFound => {
+          _finished = true
+          close()
+        }
       }
       _lookahead != None
     }
