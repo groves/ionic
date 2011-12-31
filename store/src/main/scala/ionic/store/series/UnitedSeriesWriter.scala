@@ -1,10 +1,7 @@
-package ionic.server
+package ionic.store.series
 
 import java.io.RandomAccessFile
 import java.util.UUID
-
-import ionic.store.series.SeriesWriter
-import ionic.store.series.UnitedSeriesReader
 
 import org.apache.avro.Schema
 import org.apache.avro.io.DecoderFactory

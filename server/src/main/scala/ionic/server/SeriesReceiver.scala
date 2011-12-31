@@ -1,5 +1,6 @@
 package ionic.server
 
+import ionic.store.series.UnitedSeriesWriter
 import java.util.UUID
 
 import scala.collection.mutable.Buffer
