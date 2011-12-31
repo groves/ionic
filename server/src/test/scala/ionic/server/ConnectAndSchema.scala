@@ -1,5 +1,6 @@
 package ionic.server
 
+import com.threerings.fisy.Paths
 import java.util.concurrent.CountDownLatch
 
 import com.codahale.logula.Logging
@@ -36,7 +37,7 @@ class ConnectAndSchema extends FunSuite {
       }
     })
 
-    val base = IonicServer.createTempDirectory()
+    val base = Paths.makeTempFs()
     try {
       val server = new IonicServer(serverBoot, base)
       val connectFuture = clientBoot.connect(addr)

@@ -1,9 +1,9 @@
 package ionic.server
 
+import com.threerings.fisy.Paths
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.SocketAddress
-import java.util.Random
 import java.util.concurrent.Executors
 
 import com.codahale.logula.Logging
@@ -79,19 +79,12 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
 object IonicServer extends Logging {
   val port = 10713
 
-  def createTempDirectory(): LocalDirectory = {
-    val dir = new File(System.getProperty("java.io.tmpdir"),
-      "ionic-entries" + new Random().nextInt())
-    dir.mkdir()
-    new LocalDirectory(dir)
-  }
-
   def main(args: Array[String]) {
     Logging.configure { log => log.level = Level.INFO }
     val boot = new ServerBootstrap(new NioServerSocketChannelFactory(
       Executors.newCachedThreadPool(), Executors.newCachedThreadPool()))
     boot.setOption("localAddress", new InetSocketAddress(port))
-    val server = new IonicServer(boot, createTempDirectory())
+    val server = new IonicServer(boot, Paths.makeTempFs())
     Signal.handle(new Signal("INT"), new SignalHandler() {
       override def handle(sig: Signal) {
         log.info("Shutting down due to interrupt signal")

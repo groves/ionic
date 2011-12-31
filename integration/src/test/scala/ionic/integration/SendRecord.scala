@@ -1,5 +1,6 @@
 package ionic.integration
 
+import com.threerings.fisy.Paths
 import com.codahale.logula.Logging
 
 import ionic.client.Client
@@ -24,7 +25,7 @@ import com.threerings.fisy.impl.local.LocalDirectory
 
 class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
   Logging.configure { log => log.level = Level.WARN }
-  val base: LocalDirectory = IonicServer.createTempDirectory()
+  val base: LocalDirectory = Paths.makeTempFs()
 
   val addr = new LocalAddress(LocalAddress.EPHEMERAL)
 
