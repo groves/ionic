@@ -17,16 +17,18 @@ object UnitedSeriesReader {
   def dir(name: String): String = prefix + "/" + name
 }
 
-class UnitedSeriesReader(source: Directory, where: Where)
+class UnitedSeriesReader(source: Directory, where: Where, var entries: Long = -1L)
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
-  private val meta = SeriesReader.readMeta(source)
+  if (entries == -1L) {
+    entries = SeriesReader.readMeta(source).entries
+  }
   private val recordDecoder =
     DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
   private val recordReader = new GenericDatumReader[GenericRecord](schema)
   private var _read = 0L
 
-  override def hasNext(): Boolean = _read != meta.entries
+  override def hasNext(): Boolean = _read != entries
   override def next(): GenericRecord = {
     assert(hasNext())
     read()
@@ -34,11 +36,11 @@ class UnitedSeriesReader(source: Directory, where: Where)
   def read(old: GenericRecord = null): GenericRecord = {
     _read += 1
     val value = recordReader.read(old, recordDecoder)
-    if (_read == meta.entries) close()
+    if (_read == entries) close()
     value
   }
   def close() {
-    _read = meta.entries
+    _read = entries
     recordDecoder.inputStream.close()
   }
 

@@ -13,7 +13,7 @@ import com.threerings.fisy.impl.local.LocalDirectory
 
 class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
 
-  private val dest =
+  val dest =
     base.navigate(UnitedSeriesReader.dir(schema.getFullName()) + "/" + UUID.randomUUID().toString())
 
   SeriesWriter.writeSchema(schema, dest)
@@ -23,22 +23,24 @@ class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
 
   private val decoderFactory = DecoderFactory.get()
 
-  private var written = 0
-  private val mutableClosed = new Value[Boolean](false)
+  private var _written = 0
 
+  def written = _written
+
+  private val mutableClosed = new Value[Boolean](false)
   val closed: ValueView[Boolean] = mutableClosed
 
   def write(buf: ByteBuffer) {
     require(!mutableClosed.get)
     // TODO - validate data matches schema
     series.write(buf)
-    written += 1
+    _written += 1
   }
 
   def close() {
     if (mutableClosed.get) return
-    mutableClosed.update(true)
     series.close()
     SeriesWriter.writeMeta(written, dest)
+    mutableClosed.update(true)
   }
 }
