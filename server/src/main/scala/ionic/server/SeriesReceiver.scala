@@ -70,7 +70,7 @@ class SeriesReceiver(base: LocalDirectory)
       }
       case 1 => writers(decoder.readInt())
     }
-    writer.write(inbuf)
+    writer.write(inbuf.toByteBuffer())
     postwrite()
   }
 

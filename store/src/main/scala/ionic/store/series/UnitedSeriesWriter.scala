@@ -1,12 +1,11 @@
 package ionic.store.series
 
 import java.io.RandomAccessFile
+import java.nio.ByteBuffer
 import java.util.UUID
 
 import org.apache.avro.Schema
 import org.apache.avro.io.DecoderFactory
-
-import org.jboss.netty.buffer.ChannelBuffer
 
 import com.threerings.fisy.impl.local.LocalDirectory
 
@@ -25,10 +24,10 @@ class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
   private var written = 0
   private var closed = false
 
-  def write(buf: ChannelBuffer) {
+  def write(buf: ByteBuffer) {
     require(!closed)
     // TODO - validate data matches schema
-    series.write(buf.toByteBuffer())
+    series.write(buf)
     written += 1
   }
 
