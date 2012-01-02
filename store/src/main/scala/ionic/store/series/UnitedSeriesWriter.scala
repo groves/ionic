@@ -1,5 +1,7 @@
 package ionic.store.series
 
+import react.ValueView
+import react.Value
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -22,18 +24,20 @@ class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
   private val decoderFactory = DecoderFactory.get()
 
   private var written = 0
-  private var closed = false
+  private val mutableClosed = new Value[Boolean](false)
+
+  val closed: ValueView[Boolean] = mutableClosed
 
   def write(buf: ByteBuffer) {
-    require(!closed)
+    require(!mutableClosed.get)
     // TODO - validate data matches schema
     series.write(buf)
     written += 1
   }
 
   def close() {
-    if (closed) return
-    closed = true
+    if (mutableClosed.get) return
+    mutableClosed.update(true)
     series.close()
     SeriesWriter.writeMeta(written, dest)
   }
