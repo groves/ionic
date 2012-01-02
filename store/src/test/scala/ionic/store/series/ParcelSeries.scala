@@ -24,13 +24,17 @@ class ParcelSeries extends FunSuite {
     record
   }
 
-  def write(parceler: SeriesParceler, values: Tuple3[Long, Long, Float]*): UnitedSeriesWriter = {
+  def write(parceler: SeriesParceler, values: Tuple3[Long, Long, Float]*): UnitedSeriesWriter =
+    write(parceler.writer(schema), values: _*)
+
+  def write(writer: UnitedSeriesWriter, values: Tuple3[Long, Long, Float]*): UnitedSeriesWriter = {
     val out = new ByteBufferOutputStream()
     val enc = EncoderFactory.get.directBinaryEncoder(out, null)
     val datumWriter = new SpecificDatumWriter[GenericData.Record](schema)
-    values.map((makeRecord _).tupled(_)).foreach(datumWriter.write(_, enc))
-    val writer = parceler.writer(schema)
-    out.getBufferList().foreach(writer.write(_))
+    values.map((makeRecord _).tupled(_)).foreach((r: GenericData.Record) => {
+      datumWriter.write(r, enc)
+      out.getBufferList().foreach(writer.write(_))
+    })
     writer
   }
 
@@ -42,7 +46,19 @@ class ParcelSeries extends FunSuite {
 
   test("read from open writer") {
     val parceler = makeParceler
-    write(parceler, (1234L, 1L, 12.7F))
-    assert(parceler.reader().size === 1)
+    write(parceler, (1234L, 1L, 12.7F), (2345L, 1L, 17.6F))
+    assert(parceler.reader().size === 2)
+  }
+
+  test("multiple writers in various states") {
+    val parceler = makeParceler
+    val openWriter = write(parceler, (1234L, 1L, 12.7F), (1235L, 2L, 10.5F), (1235L, 1L, 5F))
+    write(parceler, (2234L, 1L, 12.7F), (2235L, 2L, 10.5F), (2235L, 1L, 5F)).close()
+    val reader = parceler.reader()
+    write(openWriter, (4342L, 1L, -10.4F))
+    assert(reader.size === 6)
+    assert(parceler.reader().size === 7)
+    openWriter.close()
+    assert(parceler.reader().size === 7)
   }
 }
