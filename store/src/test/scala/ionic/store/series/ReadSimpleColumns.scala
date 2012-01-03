@@ -21,14 +21,13 @@ object ReadSimpleColumns {
   }
 
   def writeToFs(fs: Directory, schema: Schema, numEntries: Int, enc: ((Encoder) => Unit)): Directory = {
-    val seriesDir = fs.navigate(SplitSeriesReader.dir(schema) + "/" + UUID.randomUUID().toString())
     val baos = new ByteArrayOutputStream
     enc(EncoderFactory.get().directBinaryEncoder(baos, null))
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
-    val writer = new SplitSeriesWriter(schema, seriesDir)
+    val writer = new SplitSeriesWriter(schema, fs)
     0 until numEntries foreach (_ => writer.write(decoder))
     writer.close()
-    seriesDir
+    writer.dest
   }
 }
 

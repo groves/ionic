@@ -38,7 +38,7 @@ class ParcelSeries extends FunSuite {
     writer
   }
 
-  test("read from closed writer") {
+  test("read from writer transitioned to split") {
     val parceler = makeParceler
     write(parceler, (1234L, 1L, 12.7F)).close()
     assert(parceler.reader().size === 1)

@@ -1,5 +1,6 @@
 package ionic.store
 
+import ionic.store.series.Series
 import scala.collection.IterableView
 import scala.collection.JavaConversions._
 
@@ -20,10 +21,10 @@ object EntryReader {
 class EntryReader(query: Query, root: Directory) extends Iterable[GenericRecord] {
   val name = query.from
   def iterator(): Iterator[GenericRecord] = {
-    (create(SplitSeriesReader.dir(name), new SplitSeriesReader(_, query.where)) ++
-      create(UnitedSeriesReader.dir(name), new UnitedSeriesReader(_, query.where))).iterator
+    (create(Series.splitPrefix, new SplitSeriesReader(_, query.where)) ++
+      create(Series.unitedPrefix, new UnitedSeriesReader(_, query.where))).iterator
   }
 
-  private def create(path: String, mapper: (Directory => Iterator[GenericRecord])): IterableView[GenericRecord, Iterable[_]] =
-    root.navigate(path).view.collect({ case d: Directory => d }).flatMap(mapper)
+  private def create(prefix: String, mapper: (Directory => Iterator[GenericRecord])): IterableView[GenericRecord, Iterable[_]] =
+    root.navigate(prefix + "/" + name).view.collect({ case d: Directory => d }).flatMap(mapper)
 }

@@ -41,7 +41,7 @@ class WriteSimpleColumns extends FunSuite {
 
     defs.foreach {
       case (name, _, values) => {
-        val in = root.open(name).read()
+        val in = writer.dest.open(name).read()
         val decoder = DecoderFactory.get().binaryDecoder(in, null)
         dec(decoder, values)
         assert(in.read() === -1)

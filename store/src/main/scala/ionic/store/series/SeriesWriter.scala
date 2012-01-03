@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import java.util.UUID
 import java.io.OutputStreamWriter
 
 import scala.collection.JavaConversions._
@@ -14,6 +15,8 @@ import org.apache.avro.specific.SpecificDatumWriter
 import com.threerings.fisy.Directory
 
 object SeriesWriter {
+  def genDir(prefix: String, name: String) = Seq(prefix, name, UUID.randomUUID()).mkString("/")
+
   def writeSchema(schema: Schema, dest: Directory) {
     new OutputStreamWriter(dest.open("schema.avsc").write(), Charsets.UTF_8).
       append(schema.toString(true)).

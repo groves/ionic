@@ -13,8 +13,7 @@ import com.threerings.fisy.impl.local.LocalDirectory
 
 class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
 
-  val dest =
-    base.navigate(UnitedSeriesReader.dir(schema.getFullName()) + "/" + UUID.randomUUID().toString())
+  val dest = base.navigate(SeriesWriter.genDir(Series.unitedPrefix, schema.getFullName()))
 
   SeriesWriter.writeSchema(schema, dest)
 

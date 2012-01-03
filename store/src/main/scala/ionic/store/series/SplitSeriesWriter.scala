@@ -7,13 +7,17 @@ import org.apache.avro.io.Decoder
 
 import com.threerings.fisy.Directory
 
-class SplitSeriesWriter(schema: Schema, dest: Directory) {
+class SplitSeriesWriter(schema: Schema, base: Directory) {
+
+  val dest = base.navigate(SeriesWriter.genDir(Series.splitPrefix, schema.getFullName()))
+
   private val writers = schema.getFields.map(f =>
     if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp") {
       new SortedLongColumnWriter(dest, f)
     } else {
       new PassthroughAvroColumnWriter(dest, f)
     })
+
   private var written = 0
   private var closed = false
 

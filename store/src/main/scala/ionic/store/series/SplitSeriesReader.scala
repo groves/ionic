@@ -12,13 +12,6 @@ import org.apache.avro.generic.GenericRecord
 
 import com.threerings.fisy.Directory
 
-object SplitSeriesReader {
-  val prefix = "split"
-
-  def dir(schema: Schema): String = dir(schema.getFullName)
-  def dir(name: String): String = prefix + "/" + name
-}
-
 object NoneFound extends Exception
 
 class SplitSeriesReader(source: Directory, where: Where = Where())

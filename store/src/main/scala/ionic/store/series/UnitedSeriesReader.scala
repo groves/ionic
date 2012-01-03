@@ -10,13 +10,6 @@ import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.Directory
 
-object UnitedSeriesReader {
-  val prefix = "united"
-
-  def dir(schema: Schema): String = dir(schema.getFullName)
-  def dir(name: String): String = prefix + "/" + name
-}
-
 class UnitedSeriesReader(source: Directory, where: Where, var entries: Long = -1L)
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)

@@ -31,9 +31,9 @@ class SeriesParceler(base: LocalDirectory, name: String) {
   import ionic.util.ReactImplicits._
   // TODO - validate existing United and transfer to unfilled Split
 
-  val openWriters = new HashSet[UnitedSeriesWriter]
-  val closedWriters: Buffer[Directory] =
-    base.navigate(UnitedSeriesReader.dir(name)).collect({ case d: Directory => d }).toBuffer
+  private val openWriters = new HashSet[UnitedSeriesWriter]
+  private val closedWriters: Buffer[Directory] =
+    base.navigate(Series.unitedPrefix + "/" + name).collect({ case d: Directory => d }).toBuffer
 
   def reader(clauses: String = ""): Iterable[GenericRecord] =
     new ParceledReader(Query.parse(name), base, openWriters, closedWriters)
