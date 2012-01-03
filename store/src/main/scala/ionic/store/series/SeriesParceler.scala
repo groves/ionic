@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import org.apache.avro.io.DecoderFactory
 import ionic.query.Query
 import scala.collection.IterableView
 import scala.collection.JavaConversions._
@@ -13,15 +14,15 @@ import com.threerings.fisy.impl.local.LocalDirectory
 import org.apache.avro.generic.GenericRecord
 
 class ParceledReader(query: Query, root: Directory, openWriters: Iterable[UnitedSeriesWriter],
-  closedWriters: Iterable[Directory]) extends Iterable[GenericRecord] {
+  closedWriters: Iterable[Directory], splits: Iterable[Directory]) extends Iterable[GenericRecord] {
   val name = query.from
   // TODO - thread safety of written
   val openPositions: Iterable[Tuple2[Directory, Int]] = openWriters.map((w: UnitedSeriesWriter) => {
     (w.dest, w.written)
   })
-  // TODO - splits
   def iterator(): Iterator[GenericRecord] = {
-    (closedWriters.flatMap(new UnitedSeriesReader(_, query.where)) ++
+    (splits.flatMap(new SplitSeriesReader(_, query.where)) ++
+      closedWriters.flatMap(new UnitedSeriesReader(_, query.where)) ++
       openPositions.flatMap((t: Tuple2[Directory, Int]) => {
         new UnitedSeriesReader(t._1, query.where, t._2)
       })).iterator
@@ -35,14 +36,22 @@ class SeriesParceler(base: LocalDirectory, name: String) {
   private val closedWriters: Buffer[Directory] =
     base.navigate(Series.unitedPrefix + "/" + name).collect({ case d: Directory => d }).toBuffer
 
+  private def splits: Iterable[Directory] =
+    base.navigate(Series.splitPrefix + "/" + name).collect({ case d: Directory => d })
+
   def reader(clauses: String = ""): Iterable[GenericRecord] =
-    new ParceledReader(Query.parse(name), base, openWriters, closedWriters)
+    new ParceledReader(Query.parse(name), base, openWriters, closedWriters, splits)
 
   def writer(schema: Schema): UnitedSeriesWriter = {
     val writer = new UnitedSeriesWriter(schema, base)
     writer.closed.connect(() => {
       openWriters.remove(writer)
-      closedWriters += writer.dest
+      // TODO - put the transfer on a background thread, note transfer on fs
+      //closedWriters += writer.dest
+      val split = new SplitSeriesWriter(writer.schema, base)
+      val decoder = DecoderFactory.get().binaryDecoder(writer.dest.open("series").read(), null)
+      (1 to writer.written).foreach(idx => { split.write(decoder) })
+      split.close()
     })
     openWriters.add(writer)
     writer

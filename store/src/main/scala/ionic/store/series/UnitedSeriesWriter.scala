@@ -11,7 +11,7 @@ import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.impl.local.LocalDirectory
 
-class UnitedSeriesWriter(schema: Schema, base: LocalDirectory) {
+class UnitedSeriesWriter(val schema: Schema, base: LocalDirectory) {
 
   val dest = base.navigate(SeriesWriter.genDir(Series.unitedPrefix, schema.getFullName()))
 
