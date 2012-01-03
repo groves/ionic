@@ -17,7 +17,7 @@ import com.threerings.fisy.Paths
 
 object IterateEntries {
   val schema =
-    WriteSimpleColumns.makeSchema(List(("timestamp", LONG), ("playerId", LONG), ("score", FLOAT)))
+    WriteSimpleColumns.makeSchema(("timestamp", LONG), ("playerId", LONG), ("score", FLOAT))
 
   def writeSeries(fs: Directory, baseTs: Long) {
     ReadSimpleColumns.writeToFs(fs, schema, 3, (encoder) => {

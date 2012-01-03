@@ -12,7 +12,7 @@ import org.apache.avro.Schema.Type._
 
 class ParcelSeries extends FunSuite {
   val schema =
-    WriteSimpleColumns.makeSchema(List(("timestamp", LONG), ("playerId", LONG), ("score", FLOAT)))
+    WriteSimpleColumns.makeSchema(("timestamp", LONG), ("playerId", LONG), ("score", FLOAT))
 
   def makeParceler = new SeriesParceler(Paths.makeTempFs(), schema.getFullName)
 
@@ -31,8 +31,8 @@ class ParcelSeries extends FunSuite {
     val out = new ByteBufferOutputStream()
     val enc = EncoderFactory.get.directBinaryEncoder(out, null)
     val datumWriter = new SpecificDatumWriter[GenericData.Record](schema)
-    values.map((makeRecord _).tupled(_)).foreach((r: GenericData.Record) => {
-      datumWriter.write(r, enc)
+    values.map((makeRecord _).tupled(_)).foreach(rec => {
+      datumWriter.write(rec, enc)
       out.getBufferList().foreach(writer.write(_))
     })
     writer

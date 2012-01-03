@@ -16,7 +16,7 @@ import org.scalatest.FunSuite
 import com.threerings.fisy.Paths
 
 object WriteSimpleColumns {
-  def makeSchema(defs: List[Tuple2[String, Schema.Type]]): Schema = {
+  def makeSchema(defs: Tuple2[String, Schema.Type]*): Schema = {
     val rec = Schema.createRecord("Simple", "", "ionic", false)
     rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
     rec
@@ -33,7 +33,7 @@ class WriteSimpleColumns extends FunSuite {
 
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()
-    val rec = WriteSimpleColumns.makeSchema(defs.map(t => (t._1, t._2)))
+    val rec = WriteSimpleColumns.makeSchema(defs.map(t => (t._1, t._2)): _*)
     val writer = new SplitSeriesWriter(rec, root)
     0 until defs(0)._3.length foreach (_ => writer.write(decoder))
     writer.close()

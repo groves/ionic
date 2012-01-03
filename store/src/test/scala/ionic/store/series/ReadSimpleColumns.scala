@@ -33,7 +33,7 @@ object ReadSimpleColumns {
 
 class ReadSimpleColumns extends FunSuite {
   test("reading booleans") {
-    val schema = WriteSimpleColumns.makeSchema(List(("bool1", BOOLEAN)))
+    val schema = WriteSimpleColumns.makeSchema(("bool1", BOOLEAN))
 
     val root = ReadSimpleColumns.write(schema, 3, (encoder) => {
       encoder.writeBoolean(true)
@@ -51,7 +51,7 @@ class ReadSimpleColumns extends FunSuite {
 
   test("reading longs and strings") {
     val schema =
-      WriteSimpleColumns.makeSchema(List(("long1", LONG), ("string2", STRING)))
+      WriteSimpleColumns.makeSchema(("long1", LONG), ("string2", STRING))
 
     val root = ReadSimpleColumns.write(schema, 2, (encoder) => {
       encoder.writeLong(1234)
@@ -72,7 +72,7 @@ class ReadSimpleColumns extends FunSuite {
 
   test("reading timestamps") {
     val schema =
-      WriteSimpleColumns.makeSchema(List(("timestamp", LONG), ("string", STRING)))
+      WriteSimpleColumns.makeSchema(("timestamp", LONG), ("string", STRING))
 
     val root = ReadSimpleColumns.write(schema, 4, (encoder) => {
       encoder.writeLong(1234)
