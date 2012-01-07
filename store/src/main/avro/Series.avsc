@@ -2,5 +2,8 @@
     "type": "record",
     "namespace": "ionic.store.series",
     "name": "SeriesMetadata",
-    "fields": [ { "name": "entries", "type": "long"} ]
+    "fields": [
+        { "name": "entries", "type": "long"},
+        { "name": "transferringTo", "type": "string"},
+        { "name": "transferredFrom", "type": "string"}]
 }

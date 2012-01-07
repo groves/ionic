@@ -7,8 +7,7 @@ import org.apache.avro.io.Decoder
 
 import com.threerings.fisy.Directory
 
-class SplitSeriesWriter(schema: Schema, base: Directory) {
-
+class SplitSeriesWriter(schema: Schema, base: Directory, transferFrom: String = "") {
   val dest = base.navigate(SeriesWriter.genDir(Series.splitPrefix, schema.getFullName()))
 
   private val writers = schema.getFields.map(f =>
@@ -18,18 +17,21 @@ class SplitSeriesWriter(schema: Schema, base: Directory) {
       new PassthroughAvroColumnWriter(dest, f)
     })
 
-  private var written = 0
+  private var _written = 0
+  def written = _written
+
   private var closed = false
 
   SeriesWriter.writeSchema(schema, dest)
+  SeriesWriter.writeMeta(dest, transferredFrom = transferFrom)
   def write(decoder: Decoder) {
     writers.foreach(_.write(decoder))
-    written += 1
+    _written += 1
   }
   def close() {
     if (closed) { return }
     closed = true
     writers.foreach(_.close())
-    SeriesWriter.writeMeta(written, dest)
+    SeriesWriter.writeMeta(dest, written, transferredFrom = transferFrom)
   }
 }

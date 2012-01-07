@@ -28,7 +28,7 @@ class ParceledReader(query: Query, root: Directory, openWriters: Iterable[United
       })).iterator
   }
 }
-class SeriesParceler(base: LocalDirectory, name: String) {
+class SeriesParceler(val base: LocalDirectory, name: String) {
   import ionic.util.ReactImplicits._
   // TODO - validate existing United and transfer to unfilled Split
 
@@ -48,10 +48,13 @@ class SeriesParceler(base: LocalDirectory, name: String) {
       openWriters.remove(writer)
       // TODO - put the transfer on a background thread, note transfer on fs
       //closedWriters += writer.dest
-      val split = new SplitSeriesWriter(writer.schema, base)
+      val split = new SplitSeriesWriter(writer.schema, base, writer.dest.getPath)
+      writer.startTransfer(split.dest.getPath)
       val decoder = DecoderFactory.get().binaryDecoder(writer.dest.open("series").read(), null)
-      (1 to writer.written).foreach(idx => { split.write(decoder) })
+      (1 to writer.written).foreach(_ => { split.write(decoder) })
       split.close()
+      assert(split.written == writer.written)
+      writer.dest.delete()
     })
     openWriters.add(writer)
     writer

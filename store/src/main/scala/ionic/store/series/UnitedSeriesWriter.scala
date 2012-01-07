@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import com.threerings.fisy.Directory
 import react.ValueView
 import react.Value
 import java.io.RandomAccessFile
@@ -39,7 +40,11 @@ class UnitedSeriesWriter(val schema: Schema, base: LocalDirectory) {
   def close() {
     if (mutableClosed.get) return
     series.close()
-    SeriesWriter.writeMeta(written, dest)
+    SeriesWriter.writeMeta(dest, written)
     mutableClosed.update(true)
+  }
+
+  def startTransfer(transferDest: String) {
+    SeriesWriter.writeMeta(dest, written, transferringTo = transferDest)
   }
 }
