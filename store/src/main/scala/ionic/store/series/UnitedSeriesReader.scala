@@ -10,14 +10,17 @@ import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.Directory
 
-class UnitedSeriesReader(source: Directory, where: Where, var entries: Long = -1L)
+object UnitedSeriesReader {
+  def makeDecoder(source: Directory) =
+    DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
+}
+class UnitedSeriesReader(source: Directory, where: Where = Where(), var entries: Long = -1L)
   extends Iterator[GenericRecord] {
-  private val schema = SeriesReader.readSchema(source)
+  val schema = SeriesReader.readSchema(source)
   if (entries == -1L) {
     entries = SeriesReader.readMeta(source).entries
   }
-  private val recordDecoder =
-    DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
+  private val recordDecoder = UnitedSeriesReader.makeDecoder(source)
   private val recordReader = new GenericDatumReader[GenericRecord](schema)
   private var _read = 0L
 

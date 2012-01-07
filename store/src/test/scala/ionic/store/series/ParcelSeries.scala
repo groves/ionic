@@ -2,6 +2,9 @@ package ionic.store.series
 
 import scala.collection.JavaConversions._
 
+import com.codahale.logula.Logging
+import org.apache.log4j.Level
+
 import org.apache.avro.io.EncoderFactory
 import org.apache.avro.util.ByteBufferOutputStream
 import org.apache.avro.specific.SpecificDatumWriter
@@ -11,6 +14,8 @@ import org.scalatest.FunSuite
 import org.apache.avro.Schema.Type._
 
 class ParcelSeries extends FunSuite {
+  Logging.configure { log => log.level = Level.INFO }
+
   val schema =
     WriteSimpleColumns.makeSchema(("timestamp", LONG), ("playerId", LONG), ("score", FLOAT))
 
@@ -44,6 +49,15 @@ class ParcelSeries extends FunSuite {
     assert(parceler.reader().size === 1)
     val laterParceler = new SeriesParceler(parceler.base, schema.getFullName)
     assert(laterParceler.reader().size === 1)
+  }
+
+  test("open with completed but undeleted transfer") {
+    val fs = Paths.makeTempFs()
+    val writer = new UnitedSeriesWriter(schema, fs)
+    write(writer, (2234L, 1L, 12.7F), (1234L, 2L, 12345.92F))
+    writer.close()
+    SplitSeriesWriter.transferFrom(fs, writer)
+    assert(new SeriesParceler(fs, schema.getFullName).reader().size === 2)
   }
 
   test("read from open writer") {

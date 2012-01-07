@@ -1,6 +1,5 @@
 package ionic.store.series
 
-import org.apache.avro.io.DecoderFactory
 import ionic.query.Query
 import scala.collection.IterableView
 import scala.collection.JavaConversions._
@@ -12,6 +11,7 @@ import org.apache.avro.Schema
 import scala.collection.mutable.HashSet
 import com.threerings.fisy.impl.local.LocalDirectory
 import org.apache.avro.generic.GenericRecord
+import com.codahale.logula.Logging
 
 class ParceledReader(query: Query, root: Directory, openWriters: Iterable[UnitedSeriesWriter],
   closedWriters: Iterable[Directory], splits: Iterable[Directory]) extends Iterable[GenericRecord] {
@@ -28,16 +28,40 @@ class ParceledReader(query: Query, root: Directory, openWriters: Iterable[United
       })).iterator
   }
 }
-class SeriesParceler(val base: LocalDirectory, name: String) {
+class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   import ionic.util.ReactImplicits._
   // TODO - validate existing United and transfer to unfilled Split
 
   private val openWriters = new HashSet[UnitedSeriesWriter]
-  private val closedWriters: Buffer[Directory] =
-    base.navigate(Series.unitedPrefix + "/" + name).collect({ case d: Directory => d }).toBuffer
-
   private def splits: Iterable[Directory] =
     base.navigate(Series.splitPrefix + "/" + name).collect({ case d: Directory => d })
+
+  splits.map(new SplitSeriesReader(_)).filter((reader: SplitSeriesReader) => {
+    base.navigate(reader.meta.transferredFrom.toString).exists()
+  }).foreach((split: SplitSeriesReader) => {
+    val unitedDir = base.navigate(split.meta.transferredFrom.toString)
+    val united = new UnitedSeriesReader(unitedDir)
+    if (united.entries == split.meta.entries) {
+      log.warn("Completed united to split transfer lingers, deleting",
+        "united", split.meta.transferredFrom)
+      unitedDir.delete()
+    } else {
+      log.warn("Found incomplete transfer to split. Deleting", "split", split.source)
+      split.source.delete()
+      if (united.entries > 0) {
+        log.warn("Redoing incomplete transfer")
+        SplitSeriesWriter.transferFrom(base, united.schema, unitedDir,
+          united.entries.asInstanceOf[Int])
+      } else {
+        log.warn("Incomplete transfer was of empty united, deleting it as well",
+          "united", unitedDir)
+        unitedDir.delete()
+      }
+
+    }
+  })
+  private val closedWriters: Buffer[Directory] =
+    base.navigate(Series.unitedPrefix + "/" + name).collect({ case d: Directory => d }).toBuffer
 
   def reader(clauses: String = ""): Iterable[GenericRecord] =
     new ParceledReader(Query.parse(name), base, openWriters, closedWriters, splits)
@@ -48,11 +72,7 @@ class SeriesParceler(val base: LocalDirectory, name: String) {
       openWriters.remove(writer)
       // TODO - put the transfer on a background thread, note transfer on fs
       //closedWriters += writer.dest
-      val split = new SplitSeriesWriter(writer.schema, base, writer.dest.getPath)
-      writer.startTransfer(split.dest.getPath)
-      val decoder = DecoderFactory.get().binaryDecoder(writer.dest.open("series").read(), null)
-      (1 to writer.written).foreach(_ => { split.write(decoder) })
-      split.close()
+      val split: SplitSeriesWriter = SplitSeriesWriter.transferFrom(base, writer)
       assert(split.written == writer.written)
       writer.dest.delete()
     })

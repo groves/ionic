@@ -14,10 +14,10 @@ import com.threerings.fisy.Directory
 
 object NoneFound extends Exception
 
-class SplitSeriesReader(source: Directory, where: Where = Where())
+class SplitSeriesReader(val source: Directory, where: Where = Where())
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
-  private val meta = SeriesReader.readMeta(source)
+  val meta = SeriesReader.readMeta(source)
   // Create a list of readers for each field with the conditions in the where for that field
   private val readers = schema.getFields.map(f => {
     val clausesForField = where.clauses.filter(_.f == f.name)
