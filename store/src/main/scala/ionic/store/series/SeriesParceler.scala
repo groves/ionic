@@ -55,9 +55,8 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
       } else {
         log.warn("Incomplete transfer was of empty united, deleting it as well",
           "united", unitedDir)
-        unitedDir.delete()
       }
-
+      unitedDir.delete()
     }
   })
   private val closedWriters: Buffer[Directory] =
