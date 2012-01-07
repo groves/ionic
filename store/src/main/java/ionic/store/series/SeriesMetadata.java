@@ -6,17 +6,15 @@
 package ionic.store.series;  
 @SuppressWarnings("all")
 public class SeriesMetadata extends org.apache.avro.specific.SpecificRecordBase implements org.apache.avro.specific.SpecificRecord {
-  public static final org.apache.avro.Schema SCHEMA$ = org.apache.avro.Schema.parse("{\"type\":\"record\",\"name\":\"SeriesMetadata\",\"namespace\":\"ionic.store.series\",\"fields\":[{\"name\":\"entries\",\"type\":\"long\"},{\"name\":\"transferringTo\",\"type\":\"string\"},{\"name\":\"transferredFrom\",\"type\":\"string\"}]}");
+  public static final org.apache.avro.Schema SCHEMA$ = org.apache.avro.Schema.parse("{\"type\":\"record\",\"name\":\"SeriesMetadata\",\"namespace\":\"ionic.store.series\",\"fields\":[{\"name\":\"entries\",\"type\":\"long\"},{\"name\":\"transferredFrom\",\"type\":\"string\"}]}");
   public long entries;
-  public java.lang.CharSequence transferringTo;
   public java.lang.CharSequence transferredFrom;
   public org.apache.avro.Schema getSchema() { return SCHEMA$; }
   // Used by DatumWriter.  Applications should not call. 
   public java.lang.Object get(int field$) {
     switch (field$) {
     case 0: return entries;
-    case 1: return transferringTo;
-    case 2: return transferredFrom;
+    case 1: return transferredFrom;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }
@@ -25,8 +23,7 @@ public class SeriesMetadata extends org.apache.avro.specific.SpecificRecordBase 
   public void put(int field$, java.lang.Object value$) {
     switch (field$) {
     case 0: entries = (java.lang.Long)value$; break;
-    case 1: transferringTo = (java.lang.CharSequence)value$; break;
-    case 2: transferredFrom = (java.lang.CharSequence)value$; break;
+    case 1: transferredFrom = (java.lang.CharSequence)value$; break;
     default: throw new org.apache.avro.AvroRuntimeException("Bad index");
     }
   }

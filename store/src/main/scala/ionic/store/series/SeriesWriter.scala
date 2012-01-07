@@ -23,14 +23,12 @@ object SeriesWriter {
       close()
   }
 
-  def writeMeta(dest: Directory, written: Int = 0, transferringTo: String = "",
-    transferredFrom: String = "") {
+  def writeMeta(dest: Directory, written: Int = 0, transferredFrom: String = "") {
     val metaOut = dest.open("meta.avsc").overwrite()
     val encoder = EncoderFactory.get().jsonEncoder(SeriesMetadata.SCHEMA$, metaOut)
     val metaWriter: DatumWriter[SeriesMetadata] = new SpecificDatumWriter(SeriesMetadata.SCHEMA$)
     val meta = new SeriesMetadata()
     meta.entries = written
-    meta.transferringTo = transferringTo;
     meta.transferredFrom = transferredFrom;
     metaWriter.write(meta, encoder)
     encoder.flush()

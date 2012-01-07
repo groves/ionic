@@ -43,8 +43,4 @@ class UnitedSeriesWriter(val schema: Schema, base: LocalDirectory) {
     SeriesWriter.writeMeta(dest, written)
     mutableClosed.update(true)
   }
-
-  def startTransfer(transferDest: String) {
-    SeriesWriter.writeMeta(dest, written, transferringTo = transferDest)
-  }
 }

@@ -4,6 +4,5 @@
     "name": "SeriesMetadata",
     "fields": [
         { "name": "entries", "type": "long"},
-        { "name": "transferringTo", "type": "string"},
         { "name": "transferredFrom", "type": "string"}]
 }
