@@ -1,0 +1,18 @@
+Server Coordination
+====================
+* Lock file for base of entries dir, one at a time
+
+Server Receives
+=================
+* SeriesReceiver opens unfinished or new united series and appends to configurable size
+* On hitting configurable size, united series gets stuck on queue to transfer to split for schema
+* On transfer completion, united series is marked as invalid for new reads, series moved for new
+  reads 
+* When invalid to valid transfer completes, united series is removed
+
+Server Queries
+===============
+* QueryReceiver opens unfinished and completed united series and split series at current record
+  length
+* Query reads records until client closes
+* All opened readers are closed
