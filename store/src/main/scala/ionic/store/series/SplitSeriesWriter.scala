@@ -8,13 +8,16 @@ import org.apache.avro.io.Decoder
 import com.threerings.fisy.Directory
 
 object SplitSeriesWriter {
+  def transferFrom(base: Directory, reader: UnitedSeriesReader): SplitSeriesWriter =
+    transferFrom(base, reader.schema, reader.source, reader.entries)
   def transferFrom(base: Directory, writer: UnitedSeriesWriter): SplitSeriesWriter =
     transferFrom(base, writer.schema, writer.dest, writer.written)
-  def transferFrom(base: Directory, schema: Schema, source: Directory, entries: Int) = {
+  def transferFrom(base: Directory, schema: Schema, source: Directory, entries: Long) = {
     val split = new SplitSeriesWriter(schema, base, source.getPath)
     val decoder = UnitedSeriesReader.makeDecoder(source)
-    (1 to entries).foreach(_ => { split.write(decoder) })
+    (1L to entries).foreach(_ => { split.write(decoder) })
     split.close()
+    assert(split.written == entries)
     split
   }
 }

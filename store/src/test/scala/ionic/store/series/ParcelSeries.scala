@@ -72,6 +72,14 @@ class ParcelSeries extends FunSuite {
     assert(new SeriesParceler(fs, schema.getFullName).reader().size === 2)
   }
 
+  test("open with finished united") {
+    val fs = Paths.makeTempFs()
+    val writer = new UnitedSeriesWriter(schema, fs)
+    write(writer, (2234L, 1L, 12.7F), (1234L, 2L, 12345.92F))
+    writer.close()
+    assert(new SeriesParceler(fs, schema.getFullName).reader().size === 2)
+  }
+
   test("read from open writer") {
     val parceler = makeParceler
     write(parceler, (1234L, 1L, 12.7F), (2345L, 1L, 17.6F))

@@ -14,7 +14,7 @@ object UnitedSeriesReader {
   def makeDecoder(source: Directory) =
     DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
 }
-class UnitedSeriesReader(source: Directory, where: Where = Where(), var entries: Long = -1L)
+class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entries: Long = -1L)
   extends Iterator[GenericRecord] {
   val schema = SeriesReader.readSchema(source)
   if (entries == -1L) {

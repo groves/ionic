@@ -17,16 +17,15 @@ import org.apache.avro.generic.GenericRecord
 import com.threerings.fisy.Directory
 import com.threerings.fisy.impl.local.LocalDirectory
 
-class ParceledReader(query: Query, root: Directory, openWriters: Iterable[UnitedSeriesWriter],
-  closedWriters: Iterable[Directory], splits: Iterable[Directory]) extends Iterable[GenericRecord] {
+class ParceledReader(query: Query, root: Directory, writers: Iterable[UnitedSeriesWriter],
+  splits: Iterable[Directory]) extends Iterable[GenericRecord] {
   val name = query.from
   // TODO - thread safety of written
-  val openPositions: Iterable[Tuple2[Directory, Int]] = openWriters.map((w: UnitedSeriesWriter) => {
+  val openPositions: Iterable[Tuple2[Directory, Int]] = writers.map((w: UnitedSeriesWriter) => {
     (w.dest, w.written)
   })
   def iterator(): Iterator[GenericRecord] = {
     (splits.flatMap(new SplitSeriesReader(_, query.where)) ++
-      closedWriters.flatMap(new UnitedSeriesReader(_, query.where)) ++
       openPositions.flatMap((t: Tuple2[Directory, Int]) => {
         new UnitedSeriesReader(t._1, query.where, t._2)
       })).iterator
@@ -34,9 +33,8 @@ class ParceledReader(query: Query, root: Directory, openWriters: Iterable[United
 }
 class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   import ionic.util.ReactImplicits._
-  // TODO - validate existing United and transfer to unfilled Split
 
-  private val openWriters = new HashSet[UnitedSeriesWriter]
+  private val writers = new HashSet[UnitedSeriesWriter]
   private val splitter :Executor = Executors.newSingleThreadExecutor()
   private def splits: Iterable[Directory] =
     base.navigate(Series.splitPrefix + "/" + name).collect({ case d: Directory => d })
@@ -64,27 +62,29 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
       unitedDir.delete()
     }
   })
-  private val closedWriters: Buffer[Directory] =
-    base.navigate(Series.unitedPrefix + "/" + name).collect({ case d: Directory => d }).toBuffer
+  base.navigate(Series.unitedPrefix + "/" + name).collect({ case d: Directory => d }).map(
+    new UnitedSeriesReader(_)).foreach((reader :UnitedSeriesReader) => {
+      SplitSeriesWriter.transferFrom(base, reader)
+      reader.source.delete()
+    })
 
   def reader(clauses: String = ""): Iterable[GenericRecord] =
-    new ParceledReader(Query.parse(name), base, openWriters, closedWriters, splits)
+    new ParceledReader(Query.parse(name), base, writers, splits)
 
   def writer(schema: Schema): UnitedSeriesWriter = {
     val writer = new UnitedSeriesWriter(schema, base)
     writer.closed.connect(() => {
       // TODO - thread safety of writer transfer
-      openWriters -= writer
-      closedWriters += writer.dest
       splitter.execute(new Runnable() {
         def run {
-          val split: SplitSeriesWriter = SplitSeriesWriter.transferFrom(base, writer)
-          assert(split.written == writer.written)
-          closedWriters -= writer.dest
+          // TODO - don't make visible until transfer completed
+          SplitSeriesWriter.transferFrom(base, writer)
+          writers -= writer
+          // TODO - don't delete if there's an open reader
           writer.dest.delete()
         }})
     })
-    openWriters += writer
+    writers += writer
     writer
   }
 }
