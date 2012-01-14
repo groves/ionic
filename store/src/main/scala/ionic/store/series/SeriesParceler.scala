@@ -1,5 +1,7 @@
 package ionic.store.series
 
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import ionic.query.Query
 import scala.collection.IterableView
 import scala.collection.JavaConversions._
@@ -33,6 +35,7 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   // TODO - validate existing United and transfer to unfilled Split
 
   private val openWriters = new HashSet[UnitedSeriesWriter]
+  private val splitter :Executor = Executors.newSingleThreadExecutor()
   private def splits: Iterable[Directory] =
     base.navigate(Series.splitPrefix + "/" + name).collect({ case d: Directory => d })
 
@@ -68,14 +71,18 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   def writer(schema: Schema): UnitedSeriesWriter = {
     val writer = new UnitedSeriesWriter(schema, base)
     writer.closed.connect(() => {
-      openWriters.remove(writer)
-      // TODO - put the transfer on a background thread, note transfer on fs
-      //closedWriters += writer.dest
-      val split: SplitSeriesWriter = SplitSeriesWriter.transferFrom(base, writer)
-      assert(split.written == writer.written)
-      writer.dest.delete()
+      // TODO - thread safety of writer transfer
+      openWriters -= writer
+      closedWriters += writer.dest
+      splitter.execute(new Runnable() {
+        def run {
+          val split: SplitSeriesWriter = SplitSeriesWriter.transferFrom(base, writer)
+          assert(split.written == writer.written)
+          closedWriters -= writer.dest
+          writer.dest.delete()
+        }})
     })
-    openWriters.add(writer)
+    openWriters += writer
     writer
   }
 }
