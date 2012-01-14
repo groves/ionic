@@ -1,7 +1,5 @@
 package ionic.server
 
-import com.threerings.fisy.Paths
-import java.io.File
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.util.concurrent.Executors
@@ -32,6 +30,7 @@ import sun.misc.SignalHandler
 
 import com.threerings.fisy.Directory
 import com.threerings.fisy.OperationException
+import com.threerings.fisy.Paths
 import com.threerings.fisy.impl.local.LocalDirectory
 
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */

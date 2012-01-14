@@ -1,9 +1,10 @@
 package ionic.query
 
-import org.apache.avro.generic.GenericRecord
 import scala.collection.JavaConversions._
 
 import ionic.store.IterateEntries
+
+import org.apache.avro.generic.GenericRecord
 
 import org.scalatest.FunSuite
 

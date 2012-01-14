@@ -1,7 +1,7 @@
 package ionic.store.series
 
-import java.util.UUID
 import java.io.OutputStreamWriter
+import java.util.UUID
 
 import scala.collection.JavaConversions._
 

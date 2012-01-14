@@ -1,7 +1,6 @@
 package ionic.store.series
 
 import java.io.ByteArrayOutputStream
-import java.util.UUID
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._

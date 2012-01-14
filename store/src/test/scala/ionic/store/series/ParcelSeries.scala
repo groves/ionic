@@ -3,15 +3,17 @@ package ionic.store.series
 import scala.collection.JavaConversions._
 
 import com.codahale.logula.Logging
+
+import org.apache.avro.Schema.Type._
+import org.apache.avro.generic.GenericData
+import org.apache.avro.io.EncoderFactory
+import org.apache.avro.specific.SpecificDatumWriter
+import org.apache.avro.util.ByteBufferOutputStream
 import org.apache.log4j.Level
 
-import org.apache.avro.io.EncoderFactory
-import org.apache.avro.util.ByteBufferOutputStream
-import org.apache.avro.specific.SpecificDatumWriter
-import org.apache.avro.generic.GenericData
-import com.threerings.fisy.Paths
 import org.scalatest.FunSuite
-import org.apache.avro.Schema.Type._
+
+import com.threerings.fisy.Paths
 
 class ParcelSeries extends FunSuite {
   Logging.configure { log => log.level = Level.INFO }

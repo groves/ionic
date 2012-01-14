@@ -2,18 +2,20 @@ package ionic.store.series
 
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
-import ionic.query.Query
-import scala.collection.IterableView
+
 import scala.collection.JavaConversions._
+import scala.collection.mutable.Buffer
+import scala.collection.mutable.HashSet
+
+import com.codahale.logula.Logging
+
+import ionic.query.Query
+
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericRecord
 
 import com.threerings.fisy.Directory
-import scala.collection.mutable.Buffer
-import ionic.store.EntryReader
-import org.apache.avro.Schema
-import scala.collection.mutable.HashSet
 import com.threerings.fisy.impl.local.LocalDirectory
-import org.apache.avro.generic.GenericRecord
-import com.codahale.logula.Logging
 
 class ParceledReader(query: Query, root: Directory, openWriters: Iterable[UnitedSeriesWriter],
   closedWriters: Iterable[Directory], splits: Iterable[Directory]) extends Iterable[GenericRecord] {

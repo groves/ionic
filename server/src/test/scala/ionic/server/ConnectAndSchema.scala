@@ -1,6 +1,5 @@
 package ionic.server
 
-import com.threerings.fisy.Paths
 import java.util.concurrent.CountDownLatch
 
 import com.codahale.logula.Logging
@@ -20,6 +19,8 @@ import org.jboss.netty.channel.local.DefaultLocalServerChannelFactory
 import org.jboss.netty.channel.local.LocalAddress
 
 import org.scalatest.FunSuite
+
+import com.threerings.fisy.Paths
 
 class ConnectAndSchema extends FunSuite {
   test("connect and send schema") {

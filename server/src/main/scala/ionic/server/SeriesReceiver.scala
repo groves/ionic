@@ -1,6 +1,5 @@
 package ionic.server
 
-import ionic.store.series.UnitedSeriesWriter
 import java.util.UUID
 
 import scala.collection.mutable.Buffer
@@ -9,6 +8,7 @@ import scala.collection.mutable.Map
 import com.codahale.logula.Logging
 
 import ionic.store.series.SeriesWriter
+import ionic.store.series.UnitedSeriesWriter
 
 import org.apache.avro.Schema
 import org.apache.avro.io.BinaryDecoder

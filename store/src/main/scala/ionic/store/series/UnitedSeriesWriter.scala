@@ -1,15 +1,15 @@
 package ionic.store.series
 
-import com.threerings.fisy.Directory
-import react.ValueView
-import react.Value
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
-import java.util.UUID
 
 import org.apache.avro.Schema
 import org.apache.avro.io.DecoderFactory
 
+import react.Value
+import react.ValueView
+
+import com.threerings.fisy.Directory
 import com.threerings.fisy.impl.local.LocalDirectory
 
 class UnitedSeriesWriter(val schema: Schema, base: LocalDirectory) {

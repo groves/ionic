@@ -1,6 +1,5 @@
 package ionic.integration
 
-import com.threerings.fisy.Paths
 import com.codahale.logula.Logging
 
 import ionic.client.Client
@@ -21,6 +20,7 @@ import org.scalatest.FunSuite
 import org.scalatest.OneInstancePerTest
 
 import com.threerings.fisy.Directory
+import com.threerings.fisy.Paths
 import com.threerings.fisy.impl.local.LocalDirectory
 
 class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
