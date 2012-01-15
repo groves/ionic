@@ -21,8 +21,6 @@ class UnitedSeriesWriter(val schema: Schema, base: LocalDirectory) {
   // Opening with rwd forces data syncs on every write, but allows lazy metadata syncs
   private val series = new RandomAccessFile(dest.open("series").file(), "rwd").getChannel()
 
-  private val decoderFactory = DecoderFactory.get()
-
   private var _written = 0L
 
   def written = _written
