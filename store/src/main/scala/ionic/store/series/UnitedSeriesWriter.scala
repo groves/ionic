@@ -23,7 +23,7 @@ class UnitedSeriesWriter(val schema: Schema, base: LocalDirectory) {
 
   private val decoderFactory = DecoderFactory.get()
 
-  private var _written = 0
+  private var _written = 0L
 
   def written = _written
 

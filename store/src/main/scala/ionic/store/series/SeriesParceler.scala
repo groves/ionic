@@ -21,12 +21,11 @@ class ParceledReader(query: Query, root: Directory, writers: Iterable[UnitedSeri
   splits: Iterable[Directory]) extends Iterable[GenericRecord] {
   val name = query.from
   // TODO - thread safety of written
-  val openPositions: Iterable[Tuple2[Directory, Int]] = writers.map((w: UnitedSeriesWriter) => {
-    (w.dest, w.written)
-  })
+  val openPositions: Iterable[Tuple2[Directory, Long]] =
+    writers.map((w: UnitedSeriesWriter) => { (w.dest, w.written) })
   def iterator(): Iterator[GenericRecord] = {
     (splits.flatMap(new SplitSeriesReader(_, query.where)) ++
-      openPositions.flatMap((t: Tuple2[Directory, Int]) => {
+      openPositions.flatMap((t: Tuple2[Directory, Long]) => {
         new UnitedSeriesReader(t._1, query.where, t._2)
       })).iterator
   }
@@ -53,8 +52,7 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
       split.source.delete()
       if (united.entries > 0) {
         log.warn("Redoing incomplete transfer")
-        SplitSeriesWriter.transferFrom(base, united.schema, unitedDir,
-          united.entries.asInstanceOf[Int])
+        SplitSeriesWriter.transferFrom(base, united)
       } else {
         log.warn("Incomplete transfer was of empty united, deleting it as well",
           "united", unitedDir)
