@@ -23,7 +23,8 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   import ionic.util.ReactImplicits._
   import ionic.util.RunnableImplicit._
 
-  private val splitter :Executor = Executors.newSingleThreadExecutor()
+  // Exposed for testing
+  protected[series] val splitter :Executor = Executors.newSingleThreadExecutor()
 
   // open series writers, readers on those writers, and fully-transferred splits. All access to
   // these variables post-construction must be inside synchronization on writers.
@@ -60,11 +61,13 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     })
 
   private def readers(query :Query) :Iterable[Iterator[GenericRecord]] = {
-    var openPositions : Iterable[Tuple2[Directory, Long]] = writers synchronized {
-      writers.map((w: UnitedSeriesWriter) => { (w.dest, w.written) })
+    writers synchronized {
+      splits.map(new SplitSeriesReader(_, query.where)) ++
+        writers.map((w: UnitedSeriesWriter) => {
+          log.debug("Marking %s open with %d already open", w.dest, openUnited.add(w.dest, 1))
+          new UnitedSeriesReader(w.dest, query.where, w.written)
+        })
     }
-    splits.map(new SplitSeriesReader(_, query.where)) ++
-      openPositions.map((t) => { new UnitedSeriesReader(t._1, query.where, t._2) })
   }
 
   def reader(clauses: String = "") = new CloseableIterable[GenericRecord] {
@@ -82,7 +85,10 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
         closed = true
         writers synchronized {
           iterators.collect({case i: UnitedSeriesReader => i}).foreach((reader) => {
-            if (openUnited.remove(reader.source, 1) <= 1) reader.source.delete()
+            if (openUnited.remove(reader.source, 1) <= 1) {
+              log.debug("Closed last reader for %s", reader.source)
+              reader.source.delete()
+            }
           })
         }
       }
@@ -98,7 +104,10 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
         writers synchronized {
           splits += split.dest
           writers -= writer
-          if (openUnited.remove(writer.dest, 1) <= 1) writer.dest.delete()
+          if (openUnited.remove(writer.dest, 1) <= 1) {
+            log.debug("Closed last writer for %s", writer.dest)
+            writer.dest.delete()
+          }
         }
       })
     })

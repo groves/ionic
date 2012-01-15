@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import java.util.concurrent.CountDownLatch
 import scala.collection.JavaConversions._
 
 import com.codahale.logula.Logging
@@ -16,6 +17,7 @@ import org.scalatest.FunSuite
 import com.threerings.fisy.Paths
 
 class ParcelSeries extends FunSuite {
+  import ionic.util.RunnableImplicit._
   Logging.configure { log => log.level = Level.INFO }
 
   val schema =
@@ -29,6 +31,12 @@ class ParcelSeries extends FunSuite {
     record.put("playerId", playerId)
     record.put("score", score)
     record
+  }
+
+  def waitForSplit (parceler :SeriesParceler) {
+    val waitOn = new CountDownLatch(1)
+    parceler.splitter.execute(() => { waitOn.countDown() })
+    waitOn.await()
   }
 
   def write(parceler: SeriesParceler, values: Tuple3[Long, Long, Float]*): UnitedSeriesWriter =
@@ -49,6 +57,7 @@ class ParcelSeries extends FunSuite {
     val parceler = makeParceler
     write(parceler, (1234L, 1L, 12.7F)).close()
     assert(parceler.reader().size === 1)
+    waitForSplit(parceler)
     val laterParceler = new SeriesParceler(parceler.base, schema.getFullName)
     assert(laterParceler.reader().size === 1)
   }
@@ -94,9 +103,9 @@ class ParcelSeries extends FunSuite {
     assert(reader.size === 6)
     write(openWriter, (4342L, 1L, -10.4F))
     assert(reader.size === 7)
-    assert(parceler.reader().size === 7)
     val iter = parceler.reader().iterator()
     openWriter.close()
+    waitForSplit(parceler)
     assert(parceler.reader().size === 7)
     assert(openWriter.dest.exists(), "An open iter keeps a united series around")
     assert(iter.size === 7)
