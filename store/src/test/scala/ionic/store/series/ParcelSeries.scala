@@ -91,10 +91,15 @@ class ParcelSeries extends FunSuite {
     val openWriter = write(parceler, (1234L, 1L, 12.7F), (1235L, 2L, 10.5F), (1235L, 1L, 5F))
     write(parceler, (2234L, 1L, 12.7F), (2235L, 2L, 10.5F), (2235L, 1L, 5F)).close()
     val reader = parceler.reader()
-    write(openWriter, (4342L, 1L, -10.4F))
     assert(reader.size === 6)
+    write(openWriter, (4342L, 1L, -10.4F))
+    assert(reader.size === 7)
     assert(parceler.reader().size === 7)
+    val iter = parceler.reader().iterator()
     openWriter.close()
     assert(parceler.reader().size === 7)
+    assert(openWriter.dest.exists(), "An open iter keeps a united series around")
+    assert(iter.size === 7)
+    assert(!openWriter.dest.exists(), "Closing the last iter deletes the series")
   }
 }
