@@ -37,19 +37,17 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     val unitedDir = base.navigate(split.meta.transferredFrom.toString)
     val united = new UnitedSeriesReader(unitedDir)
     if (united.entries == split.meta.entries) {
-      log.warn("Completed united to split transfer lingers, deleting",
-        "united", split.meta.transferredFrom)
+      log.warn("Completed united to split transfer lingers, deleting")
       unitedDir.delete()
     } else {
-      log.warn("Found incomplete transfer to split. Deleting", "split", split.source)
+      log.warn("Found incomplete transfer to split. Deleting")
       splits -= split.source
       split.source.delete()
       if (united.entries > 0) {
         log.warn("Redoing incomplete transfer")
         splits += SplitSeriesWriter.transferFrom(base, united).dest
       } else {
-        log.warn("Incomplete transfer was of empty united, deleting it as well",
-          "united", unitedDir)
+        log.warn("Incomplete transfer was of empty united, deleting it as well")
       }
       unitedDir.delete()
     }
@@ -61,25 +59,13 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     })
 
   private def readers(query :Query) :Iterable[Iterator[GenericRecord]] = {
-    writers synchronized {
-      val openPositions: Iterable[Tuple2[Directory, Long]] =
-        writers.map((w: UnitedSeriesWriter) => { (w.dest, w.written) })
-      (splits.map(new SplitSeriesReader(_, query.where)) ++
-        openPositions.map((t: Tuple2[Directory, Long]) => {
-          openUnited.add(t._1)
-          new UnitedSeriesReader(t._1, query.where, t._2)
-        }))
+    var openPositions : Iterable[Tuple2[Directory, Long]] = writers synchronized {
+      writers.map((w: UnitedSeriesWriter) => { (w.dest, w.written) })
     }
+    splits.map(new SplitSeriesReader(_, query.where)) ++
+      openPositions.map((t) => { new UnitedSeriesReader(t._1, query.where, t._2) })
   }
-  private def release(iterators :Iterable[Iterator[GenericRecord]]) {
-    writers synchronized {
-      iterators.collect({case i: UnitedSeriesReader => i}).foreach(
-        (reader :UnitedSeriesReader) => {
-          openUnited.remove(reader.source)
-          if (!openUnited.contains(reader.source)) reader.source.delete()
-          })
-      }
-  }
+
   def reader(clauses: String = "") = new CloseableIterable[GenericRecord] {
     val query = Query.parse(name)
     def iterator() = new CloseableIterator[GenericRecord] {
@@ -92,9 +78,13 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
       } else return true
       def next =  flattened.next
       def close = if (!closed) {
-          closed = true
-          release(iterators)
+        closed = true
+        writers synchronized {
+          iterators.collect({case i: UnitedSeriesReader => i}).foreach((reader) => {
+            if (openUnited.remove(reader.source, 1) <= 1) reader.source.delete()
+          })
         }
+      }
     }
   }
 
@@ -108,11 +98,14 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
           writers synchronized {
             splits += split.dest
             writers -= writer
-            if (!openUnited.contains(writer.dest)) writer.dest.delete()
+            if (openUnited.remove(writer.dest, 1) <= 1) writer.dest.delete()
           }
         }})
     })
-    writers synchronized { writers += writer }
+    writers synchronized {
+      writers += writer
+      openUnited.add(writer.dest)
+    }
     writer
   }
 }
