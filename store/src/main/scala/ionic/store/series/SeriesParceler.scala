@@ -21,6 +21,7 @@ import com.threerings.fisy.impl.local.LocalDirectory
 
 class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   import ionic.util.ReactImplicits._
+  import ionic.util.RunnableImplicit._
 
   private val splitter :Executor = Executors.newSingleThreadExecutor()
 
@@ -92,15 +93,14 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     val writer = new UnitedSeriesWriter(schema, base)
     writer.closed.connect(() => {
       // TODO - thread safety of writer transfer
-      splitter.execute(new Runnable() {
-        def run {
-          val split = SplitSeriesWriter.transferFrom(base, writer)
-          writers synchronized {
-            splits += split.dest
-            writers -= writer
-            if (openUnited.remove(writer.dest, 1) <= 1) writer.dest.delete()
-          }
-        }})
+      splitter.execute(() => {
+        val split = SplitSeriesWriter.transferFrom(base, writer)
+        writers synchronized {
+          splits += split.dest
+          writers -= writer
+          if (openUnited.remove(writer.dest, 1) <= 1) writer.dest.delete()
+        }
+      })
     })
     writers synchronized {
       writers += writer
