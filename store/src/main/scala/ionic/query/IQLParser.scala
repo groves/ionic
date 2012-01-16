@@ -15,30 +15,7 @@ class IQLParser extends JavaTokenParsers {
 
   def predicate = (ident ~ "=" ~ boolean ^^ { case f ~ _ ~ b => BooleanEquals(f, b) }
     | ident ~ "=" ~ stringLiteral ^^ { case f ~ _ ~ v => StringEquals(f, stripQuotes(v)) }
-    | ident ~ "([!><]?=|<|>)".r ~ wholeNumber ^^ {
-      case f ~ p ~ i => {
-        LongCond(f, i.toLong, p match {
-          case "=" => _ == _
-          case "!=" => _ != _
-          case ">=" => _ >= _
-          case "<=" => _ <= _
-          case "<" => _ < _
-          case ">" => _ > _
-        })
-      }
-    }
-    | ident ~ "([!><]?=|<|>)".r ~ decimalNumber ^^ {
-      case f ~ p ~ d => {
-        DoubleCond(f, d.toDouble, p match {
-          case "=" => _ == _
-          case "!=" => _ != _
-          case ">=" => _ >= _
-          case "<=" => _ <= _
-          case "<" => _ < _
-          case ">" => _ > _
-        })
-      }
-    })
+    | ident ~ "([!><]?=|<|>)".r ~ decimalNumber ^^ { case f ~ p ~ d => NumCond(f, d, p) })
 
   def boolean = ("true" ^^^ (true) | "false" ^^^ (false))
 

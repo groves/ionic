@@ -15,8 +15,7 @@ class QuerySeries extends FunSuite {
     assert(parceler.reader("ionic.Simple where playerId > 1").size === 1)
   }
 
-  // TODO - Why doesn't the query parse?
-  ignore("dual condition on mixed writers") {
+  test("dual condition on mixed writers") {
     val parceler = makeParceler
     write(parceler, (1234L, 1L, 12.7F), (2234L, 2L, 18.7F)).close()
     write(parceler, (1234L, 1L, 19.7F), (2234L, 2L, 4F))

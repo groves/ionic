@@ -4,6 +4,7 @@ import org.apache.avro.io.DecoderFactory
 import scala.collection.JavaConversions._
 
 import ionic.query.LongCond
+import ionic.query.NumCond
 import ionic.query.Where
 
 import org.apache.avro.Schema
@@ -30,7 +31,7 @@ class SplitSeriesReader(val source: Directory, where: Where = Where())
     val fClauses = where.clauses.filter(_.f == f.name)
     if (f.schema.getType == LONG) {
       // TODO - freak out if there are non-LongConds
-      val conds = fClauses.collect({ case l: LongCond => l })
+      val conds = fClauses.collect({ case n: NumCond => n }).map(_.toLong)
       if (f.name == "timestamp") {
         new SortedLongColumnReader(source, f, meta.entries, conds)
       } else {

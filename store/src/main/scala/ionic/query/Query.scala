@@ -13,8 +13,27 @@ case class LongCond(override val f: String, value: Long, pred: (Long, Long) => B
   def meets(other: Long): Boolean = pred(other, value)
 }
 
-case class DoubleCond(override val f: String, value: Double, pred: (Double, Double) => Boolean) extends Clause(f) {
+case class DoubleCond(override val f: String, value: Double, pred :(Double, Double) => Boolean) extends Clause(f) {
   def meets(other: Double): Boolean = pred(other, value)
+}
+
+case class NumCond(override val f: String, value: String, comp :String) extends Clause(f) {
+  def toLong = LongCond(f, value.toLong, comp match {
+    case "=" => _ == _
+    case "!=" => _ != _
+    case ">=" => _ >= _
+    case "<=" => _ <= _
+    case "<" => _ < _
+    case ">" => _ > _
+  })
+  def toDouble = DoubleCond(f, value.toDouble, comp match {
+    case "=" => _ == _
+    case "!=" => _ != _
+    case ">=" => _ >= _
+    case "<=" => _ <= _
+    case "<" => _ < _
+    case ">" => _ > _
+  })
 }
 
 case class BooleanEquals(override val f: String, val value: Boolean) extends Clause(f)

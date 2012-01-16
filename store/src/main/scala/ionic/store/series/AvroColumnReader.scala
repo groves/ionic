@@ -3,6 +3,7 @@ package ionic.store.series
 import java.nio.ByteBuffer
 
 import ionic.query.Clause
+import ionic.query.NumCond
 import ionic.query.DoubleCond
 import ionic.query.LongCond
 
@@ -49,11 +50,11 @@ object AvroPrimitiveReader {
     } else if (t == BYTES) {
       new BytesAvroPrimitiveReader()
     } else if (t == DOUBLE) {
-      new AvroDoubleReader(clauses.collect({ case d: DoubleCond => d }))
+      new AvroDoubleReader(clauses.collect({ case d: NumCond => d }).map(_.toDouble))
     } else if (t == FLOAT) {
-      new AvroFloatReader(clauses.collect({ case d: DoubleCond => d }))
+      new AvroFloatReader(clauses.collect({ case d: NumCond => d }).map(_.toDouble))
     } else if (t == LONG) {
-      new AvroLongReader(clauses.collect({ case l: LongCond => l }))
+      new AvroLongReader(clauses.collect({ case n: NumCond => n }).map(_.toLong))
     } else {
       val decoder = t match {
         case BOOLEAN => (decoder: Decoder) => Some(decoder.readBoolean())
