@@ -2,8 +2,6 @@ package ionic.store
 
 import scala.collection.JavaConversions._
 
-import com.google.common.collect.Iterators
-
 import ionic.store.series.ReadSimpleColumns
 import ionic.store.series.WriteSimpleColumns
 
@@ -35,19 +33,17 @@ object IterateEntries {
 }
 class IterateEntries extends FunSuite {
   test("read nothing") {
-    assert(!EntryReader("blah", Paths.makeMemoryFs()).iterator().hasNext())
+    assert(EntryReader("blah", Paths.makeTempFs()).size == 0)
   }
 
   test("read one series") {
-    val fs = Paths.makeMemoryFs()
+    val fs = Paths.makeTempFs()
     IterateEntries.writeSeries(fs, 1234)
-    val iter = EntryReader(IterateEntries.schema.getFullName(), fs).iterator()
-    assert(iter.hasNext())
-    assert(3 === Iterators.size(iter))
+    assert(3 === EntryReader(IterateEntries.schema.getFullName(), fs).size)
   }
 
   test("read two series") {
-    val fs = Paths.makeMemoryFs()
+    val fs = Paths.makeTempFs()
     IterateEntries.writeSeries(fs, 1234)
     IterateEntries.writeSeries(fs, 5678)
     val entries = EntryReader(IterateEntries.schema.getFullName(), fs).toList

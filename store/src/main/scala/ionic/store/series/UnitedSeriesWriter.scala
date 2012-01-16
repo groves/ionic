@@ -4,7 +4,6 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 
 import org.apache.avro.Schema
-import org.apache.avro.io.DecoderFactory
 
 import react.Value
 import react.ValueView

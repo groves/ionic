@@ -1,7 +1,5 @@
 package ionic.store.series
 
-import com.google.common.collect.HashMultiset
-import com.google.common.collect.Multiset
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
@@ -10,6 +8,9 @@ import scala.collection.mutable.Buffer
 import scala.collection.mutable.HashSet
 
 import com.codahale.logula.Logging
+
+import com.google.common.collect.HashMultiset
+import com.google.common.collect.Multiset
 
 import ionic.query.Query
 
@@ -34,7 +35,8 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     base.navigate(Series.splitPrefix + "/" + name).collect({ case d: Directory => d }).toBuffer
 
   splits.map(new SplitSeriesReader(_)).filter((reader: SplitSeriesReader) => {
-    base.navigate(reader.meta.transferredFrom.toString).exists()
+    val tf = reader.meta.transferredFrom.toString
+    tf.length > 0 && base.navigate(tf).exists()
   }).foreach((split: SplitSeriesReader) => {
     val unitedDir = base.navigate(split.meta.transferredFrom.toString)
     val united = new UnitedSeriesReader(unitedDir)
@@ -70,11 +72,11 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     }
   }
 
-  def reader(query: String = "") = new CloseableIterable[GenericRecord] {
-    val parsed = if (query == "") Query.parse(name) else Query.parse(query)
+  val allQuery = Query.parse(name)
+  def reader(query: Query = allQuery) = new CloseableIterable[GenericRecord] {
     def iterator() = new CloseableIterator[GenericRecord] {
       var closed = false
-      val iterators = readers(parsed)
+      val iterators = readers(query)
       val flattened = iterators.iterator.flatten
       def hasNext :Boolean = if (!flattened.hasNext) {
         close()

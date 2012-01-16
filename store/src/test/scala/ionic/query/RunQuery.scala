@@ -3,6 +3,7 @@ package ionic.query
 import scala.collection.JavaConversions._
 
 import ionic.store.IterateEntries
+import ionic.store.series.SeriesParceler
 
 import org.apache.avro.generic.GenericRecord
 
@@ -12,9 +13,9 @@ import com.threerings.fisy.Paths
 
 class RunQuery extends FunSuite {
   def run(query: String) = {
-    val fs = Paths.makeMemoryFs()
+    val fs = Paths.makeTempFs()
     IterateEntries.writeSeries(fs, 1234)
-    new QueryRunner(query, fs)
+    new SeriesParceler(fs, "ionic.Simple").reader(Query.parse(query))
   }
   test("extract all") { assert(3 === run("ionic.Simple").size) }
   test("extract of value") {

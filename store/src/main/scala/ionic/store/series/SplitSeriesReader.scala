@@ -1,6 +1,5 @@
 package ionic.store.series
 
-import org.apache.avro.io.DecoderFactory
 import scala.collection.JavaConversions._
 
 import ionic.query.LongCond
@@ -11,6 +10,7 @@ import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
+import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.Directory
 

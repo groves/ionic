@@ -3,18 +3,15 @@ package ionic.store.series
 import java.nio.ByteBuffer
 
 import ionic.query.Clause
-import ionic.query.NumCond
 import ionic.query.DoubleCond
 import ionic.query.LongCond
+import ionic.query.NumCond
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.IndexedRecord
 import org.apache.avro.io.Decoder
-import org.apache.avro.io.DecoderFactory
 import org.apache.avro.util.Utf8
-
-import com.threerings.fisy.Directory
 
 class AvroPrimitiveColumnReader(decoder: Decoder, field: Schema.Field, var entries: Long, reader: AvroPrimitiveReader, onClose :() => Unit=()=>{}) extends ColumnReader {
 

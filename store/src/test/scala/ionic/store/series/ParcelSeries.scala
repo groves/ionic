@@ -1,6 +1,7 @@
 package ionic.store.series
 
 import java.util.concurrent.CountDownLatch
+
 import scala.collection.JavaConversions._
 
 import com.codahale.logula.Logging
