@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import org.apache.avro.io.DecoderFactory
 import scala.collection.JavaConversions._
 
 import ionic.query.LongCond
@@ -18,20 +19,25 @@ class SplitSeriesReader(val source: Directory, where: Where = Where())
   extends Iterator[GenericRecord] {
   private val schema = SeriesReader.readSchema(source)
   val meta = SeriesReader.readMeta(source)
+
+  private def createPrimitiveReader(f: Schema.Field, entries: Long, reader: AvroPrimitiveReader) = {
+    val in = source.open(f.name).read()
+    new AvroPrimitiveColumnReader(DecoderFactory.get().binaryDecoder(in, null), f, entries,
+      reader, () => { in.close() })
+  }
   // Create a list of readers for each field with the conditions in the where for that field
   private val readers = schema.getFields.map(f => {
-    val clausesForField = where.clauses.filter(_.f == f.name)
+    val fClauses = where.clauses.filter(_.f == f.name)
     if (f.schema.getType == LONG) {
       // TODO - freak out if there are non-LongConds
-      val conds = clausesForField.collect({ case l: LongCond => l })
+      val conds = fClauses.collect({ case l: LongCond => l })
       if (f.name == "timestamp") {
         new SortedLongColumnReader(source, f, meta.entries, conds)
       } else {
-        new AvroPrimitiveColumnReader(source, f, meta.entries, new AvroLongReader(conds))
+          createPrimitiveReader(f, meta.entries, new AvroLongReader(conds))
       }
     } else {
-      new AvroPrimitiveColumnReader(source, f, meta.entries,
-        AvroPrimitiveReader(f.schema.getType, clausesForField))
+      createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses))
     }
   })
   private var _lookahead: Option[GenericRecord] = None

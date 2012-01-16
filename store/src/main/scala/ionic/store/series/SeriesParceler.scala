@@ -70,11 +70,11 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     }
   }
 
-  def reader(clauses: String = "") = new CloseableIterable[GenericRecord] {
-    val query = Query.parse(name)
+  def reader(query: String = "") = new CloseableIterable[GenericRecord] {
+    val parsed = if (query == "") Query.parse(name) else Query.parse(query)
     def iterator() = new CloseableIterator[GenericRecord] {
       var closed = false
-      val iterators = readers(query)
+      val iterators = readers(parsed)
       val flattened = iterators.iterator.flatten
       def hasNext :Boolean = if (!flattened.hasNext) {
         close()

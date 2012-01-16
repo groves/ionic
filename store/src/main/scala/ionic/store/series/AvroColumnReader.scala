@@ -15,26 +15,30 @@ import org.apache.avro.util.Utf8
 
 import com.threerings.fisy.Directory
 
-abstract class AvroColumnReader(source: Directory, field: Schema.Field) extends ColumnReader {
-  private val in = source.open(field.name).read()
-  val decoder = DecoderFactory.get().binaryDecoder(in, null)
+class AvroPrimitiveColumnReader(decoder: Decoder, field: Schema.Field, var entries: Long, reader: AvroPrimitiveReader, onClose :() => Unit=()=>{}) extends ColumnReader {
 
-  def close() { in.close() }
-}
+  def close() { onClose() }
+  def skip() { reader.skip(decoder) }
+  def readOne(rec :IndexedRecord): Boolean = {
+    entries -= 1
+    if (entries < 0) return false
+    reader.read(decoder) match {
+      case None => false
+      case Some(value) => {
+        rec.put(field.pos, value)
+        true
+      }
+    }
+  }
 
-class AvroPrimitiveColumnReader(source: Directory, field: Schema.Field, var entries: Long, reader: AvroPrimitiveReader) extends AvroColumnReader(source, field) {
   def read(rec: IndexedRecord, skip: Long): Option[Long] = {
     (0L until skip).foreach({ _ => reader.skip(decoder) })
     var read = 0L
-    var value: Option[Any] = None
-    do {
-      entries -= 1
-      if (entries < 0) return None
-      value = reader.read(decoder)
+    while(entries > 0) {
       read += 1
-    } while (value == None)
-    rec.put(field.pos, value.get)
-    Some(read)
+      if (readOne(rec)) return Some(read)
+    }
+    None
   }
 }
 
@@ -48,6 +52,8 @@ object AvroPrimitiveReader {
       new AvroDoubleReader(clauses.collect({ case d: DoubleCond => d }))
     } else if (t == FLOAT) {
       new AvroFloatReader(clauses.collect({ case d: DoubleCond => d }))
+    } else if (t == LONG) {
+      new AvroLongReader(clauses.collect({ case l: LongCond => l }))
     } else {
       val decoder = t match {
         case BOOLEAN => (decoder: Decoder) => Some(decoder.readBoolean())

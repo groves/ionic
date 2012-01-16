@@ -16,10 +16,8 @@ import org.scalatest.FunSuite
 
 import com.threerings.fisy.Paths
 
-class ParcelSeries extends FunSuite {
+object ParcelOps {
   import ionic.util.RunnableImplicit._
-  Logging.configure { log => log.level = Level.INFO }
-
   val schema =
     WriteSimpleColumns.makeSchema(("timestamp", LONG), ("playerId", LONG), ("score", FLOAT))
 
@@ -47,11 +45,16 @@ class ParcelSeries extends FunSuite {
     val enc = EncoderFactory.get.directBinaryEncoder(out, null)
     val datumWriter = new SpecificDatumWriter[GenericData.Record](schema)
     values.map((makeRecord _).tupled(_)).foreach(rec => {
-      datumWriter.write(rec, enc)
-      out.getBufferList().foreach(writer.write(_))
-    })
+        datumWriter.write(rec, enc)
+        out.getBufferList().foreach(writer.write(_))
+      })
     writer
   }
+}
+
+class ParcelSeries extends FunSuite {
+  import ParcelOps._
+  Logging.configure { log => log.level = Level.INFO }
 
   test("read from writer transitioned to split") {
     val parceler = makeParceler

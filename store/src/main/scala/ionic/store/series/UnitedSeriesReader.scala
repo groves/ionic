@@ -1,5 +1,7 @@
 package ionic.store.series
 
+import org.apache.avro.generic.GenericData
+import scala.collection.JavaConversions._
 import ionic.query.Where
 
 import org.apache.avro.Schema
@@ -21,6 +23,11 @@ class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entr
     entries = SeriesReader.readMeta(source).entries
   }
   private val recordDecoder = UnitedSeriesReader.makeDecoder(source)
+
+  // TODO - freak if missing field for clause
+  private val readers = schema.getFields.map(f =>
+    new AvroPrimitiveColumnReader(recordDecoder, f, entries,
+      AvroPrimitiveReader(f.schema.getType, where.clauses.filter(_.f == f.name)))).toSeq
   private val recordReader = new GenericDatumReader[GenericRecord](schema)
   private var _read = 0L
 
@@ -30,10 +37,25 @@ class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entr
     read()
   }
   def read(old: GenericRecord = null): GenericRecord = {
-    _read += 1
-    val value = recordReader.read(old, recordDecoder)
-    if (_read == entries) close()
-    value
+    val record = if (old != null) { old } else { new GenericData.Record(schema) }
+    var allMatches = false
+    while(!allMatches) {
+      _read += 1
+      allMatches = readers.foldLeft(true)((matches, reader) => {
+        if (matches) reader.readOne(record)
+        else {
+          reader.skip()
+          false
+        }
+      })
+      if (_read == entries) {
+        close()
+        // TODO - add lookahead to make this work
+        if (!allMatches) throw NoneFound
+      }
+    }
+    record
+
   }
   def close() {
     _read = entries
