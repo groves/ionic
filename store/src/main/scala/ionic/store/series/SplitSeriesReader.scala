@@ -14,10 +14,7 @@ import org.apache.avro.generic.GenericRecord
 
 import com.threerings.fisy.Directory
 
-object NoneFound extends Exception
-
-class SplitSeriesReader(val source: Directory, where: Where = Where())
-  extends Iterator[GenericRecord] {
+class SplitSeriesReader(val source: Directory, where: Where = Where()) extends LookaheadReader {
   private val schema = SeriesReader.readSchema(source)
   val meta = SeriesReader.readMeta(source)
 
@@ -41,30 +38,6 @@ class SplitSeriesReader(val source: Directory, where: Where = Where())
       createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses))
     }
   })
-  private var _lookahead: Option[GenericRecord] = None
-  private var _finished: Boolean = false
-
-  def hasNext(): Boolean = !_finished && (_lookahead match {
-    case Some(_) => true
-    case None => {
-      try {
-        _lookahead = Some(read())
-      } catch {
-        case NoneFound => {
-          _finished = true
-          close()
-        }
-      }
-      _lookahead != None
-    }
-  })
-
-  def next(): GenericRecord = {
-    assert(hasNext())
-    val looked = _lookahead.get
-    _lookahead = None
-    looked
-  }
 
   def read(old: GenericRecord = null): GenericRecord = {
     val record = if (old != null) { old } else { new GenericData.Record(schema) }

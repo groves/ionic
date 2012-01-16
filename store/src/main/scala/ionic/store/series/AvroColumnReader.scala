@@ -19,7 +19,10 @@ import com.threerings.fisy.Directory
 class AvroPrimitiveColumnReader(decoder: Decoder, field: Schema.Field, var entries: Long, reader: AvroPrimitiveReader, onClose :() => Unit=()=>{}) extends ColumnReader {
 
   def close() { onClose() }
-  def skip() { reader.skip(decoder) }
+  def skip() {
+    entries -= 1
+    if (entries >= 0) reader.skip(decoder)
+  }
   def readOne(rec :IndexedRecord): Boolean = {
     entries -= 1
     if (entries < 0) return false

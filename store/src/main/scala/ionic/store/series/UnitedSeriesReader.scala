@@ -17,7 +17,7 @@ object UnitedSeriesReader {
     DecoderFactory.get().binaryDecoder(source.open("series").read(), null)
 }
 class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entries: Long = -1L)
-  extends Iterator[GenericRecord] {
+  extends LookaheadReader {
   val schema = SeriesReader.readSchema(source)
   if (entries == -1L) {
     entries = SeriesReader.readMeta(source).entries
@@ -28,19 +28,11 @@ class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entr
   private val readers = schema.getFields.map(f =>
     new AvroPrimitiveColumnReader(recordDecoder, f, entries,
       AvroPrimitiveReader(f.schema.getType, where.clauses.filter(_.f == f.name)))).toSeq
-  private val recordReader = new GenericDatumReader[GenericRecord](schema)
-  private var _read = 0L
 
-  override def hasNext(): Boolean = _read != entries
-  override def next(): GenericRecord = {
-    assert(hasNext())
-    read()
-  }
   def read(old: GenericRecord = null): GenericRecord = {
     val record = if (old != null) { old } else { new GenericData.Record(schema) }
     var allMatches = false
     while(!allMatches) {
-      _read += 1
       allMatches = readers.foldLeft(true)((matches, reader) => {
         if (matches) reader.readOne(record)
         else {
@@ -48,18 +40,11 @@ class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entr
           false
         }
       })
-      if (_read == entries) {
-        close()
-        // TODO - add lookahead to make this work
-        if (!allMatches) throw NoneFound
-      }
+      if (readers.head.entries <= 0 && !allMatches) throw NoneFound
     }
     record
 
   }
-  def close() {
-    _read = entries
-    recordDecoder.inputStream.close()
-  }
+  def close() { recordDecoder.inputStream.close() }
 
 }
