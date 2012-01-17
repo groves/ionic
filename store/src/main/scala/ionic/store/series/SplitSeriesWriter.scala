@@ -26,11 +26,10 @@ class SplitSeriesWriter(schema: Schema, base: Directory, transferFrom: String = 
   val dest = base.navigate(SeriesWriter.genDir(Series.splitPrefix, schema.getFullName()))
 
   private val writers = schema.getFields.map(f =>
-    if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp") {
+    if (f.schema.getType == Schema.Type.LONG && f.name == "timestamp")
       new SortedLongColumnWriter(dest, f)
-    } else {
-      new PassthroughAvroColumnWriter(dest, f)
-    })
+    else if (f.schema.getType == Schema.Type.STRING) new SnappyColumnWriter(dest, f)
+    else new PassthroughAvroColumnWriter(dest, f))
 
   private var _written = 0
   def written = _written

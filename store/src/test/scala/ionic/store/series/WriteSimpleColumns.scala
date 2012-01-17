@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import java.io.OutputStream
 import java.io.ByteArrayOutputStream
 
 import scala.collection.JavaConversions._
@@ -25,11 +26,14 @@ object WriteSimpleColumns {
 
 class WriteSimpleColumns extends FunSuite {
   def check[T](defs: List[Tuple3[String, Schema.Type, List[T]]], enc: ((Encoder, T) => Unit),
-    dec: ((Decoder, List[T]) => Unit)) {
+    dec: ((Decoder, List[T]) => Unit),
+    outWrapper:(OutputStream) => OutputStream=(out :OutputStream) => { out }) {
 
     val baos = new ByteArrayOutputStream
-    val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
+    val out = outWrapper(baos)
+    val encoder = EncoderFactory.get().directBinaryEncoder(out, null)
     0 until defs(0)._3.length foreach (x => defs.foreach(f => enc(encoder, f._3(x))))
+    out.close()
 
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()

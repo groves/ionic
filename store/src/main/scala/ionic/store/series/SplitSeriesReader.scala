@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import java.io.InputStream
 import scala.collection.JavaConversions._
 
 import ionic.query.LongCond
@@ -13,13 +14,14 @@ import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.DecoderFactory
 
 import com.threerings.fisy.Directory
+import org.xerial.snappy.SnappyInputStream
 
 class SplitSeriesReader(val source: Directory, where: Where = Where()) extends LookaheadReader {
   private val schema = SeriesReader.readSchema(source)
   val meta = SeriesReader.readMeta(source)
 
-  private def createPrimitiveReader(f: Schema.Field, entries: Long, reader: AvroPrimitiveReader) = {
-    val in = source.open(f.name).read()
+  private def createPrimitiveReader(f: Schema.Field, entries: Long, reader: AvroPrimitiveReader , inWrapper:(InputStream) => InputStream=(in :InputStream) => { in }) = {
+    val in = inWrapper(source.open(f.name).read())
     new AvroPrimitiveColumnReader(DecoderFactory.get().binaryDecoder(in, null), f, entries,
       reader, () => { in.close() })
   }
@@ -34,8 +36,11 @@ class SplitSeriesReader(val source: Directory, where: Where = Where()) extends L
       } else {
           createPrimitiveReader(f, meta.entries, new AvroLongReader(conds))
       }
+    } else if (f.schema.getType == STRING) {
+      createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses),
+        (in :InputStream) => { new SnappyInputStream(in) })
     } else {
-      createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses))
+    createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses))
     }
   })
 

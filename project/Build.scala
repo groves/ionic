@@ -33,7 +33,8 @@ object IonicBuild extends Build {
 
   lazy val store = sub("store", Seq(
     libraryDependencies ++= Seq("com.threerings" % "fisy" % "1.0-SNAPSHOT",
-        "com.threerings" % "react" % "1.2-SNAPSHOT")))
+        "com.threerings" % "react" % "1.2-SNAPSHOT",
+        "org.xerial.snappy" % "snappy-java" % "1.0.4.1")))
 
   lazy val server = sub("server") dependsOn(net, store)
 
