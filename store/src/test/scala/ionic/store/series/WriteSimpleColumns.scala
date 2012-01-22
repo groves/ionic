@@ -22,7 +22,12 @@ import com.threerings.fisy.Paths
 object WriteSimpleColumns {
   def makeSchema(defs: Tuple2[String, Schema.Type]*): Schema = {
     val rec = Schema.createRecord("Simple", "", "ionic", false)
-    rec.setFields(defs.map(f => new Schema.Field(f._1, Schema.create(f._2), "", null)))
+    rec.setFields(defs.map(f => {
+        val fieldType = if (f._2 == ENUM) {
+          Schema.createEnum("TestEnum", "", "ionic", List("zero", "one", "two", "three"))
+        } else Schema.create(f._2)
+        new Schema.Field(f._1, fieldType, "", null)
+      }))
     rec
   }
 }
@@ -67,6 +72,12 @@ class WriteSimpleColumns extends FunSuite {
       ("int3", INT, List(101010, 10101010, 1010101010))),
       (enc, value) => enc.writeInt(value),
       (dec, values) => values.foreach(x => assert(dec.readInt() === x)))
+  }
+
+  test("write enum") {
+    check[Int](List(("enum1", ENUM, List(0, 1, 3))),
+    (enc, value) => enc.writeEnum(value),
+    (dec, values) => values.foreach(x => assert(dec.readEnum() === x)))
   }
 
   test("write timestamps") {

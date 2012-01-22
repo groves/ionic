@@ -23,6 +23,7 @@ class PassthroughAvroColumnWriter(dest: Directory, field: Schema.Field)
     case LONG => (decoder: Decoder) => encoder.writeLong(decoder.readLong())
     case FLOAT => (decoder: Decoder) => encoder.writeFloat(decoder.readFloat())
     case DOUBLE => (decoder: Decoder) => encoder.writeDouble(decoder.readDouble())
+    case ENUM => (decoder: Decoder) => encoder.writeEnum(decoder.readEnum())
     case STRING => (decoder: Decoder) => {
       utf8Buf = decoder.readString(utf8Buf)
       encoder.writeString(utf8Buf)
