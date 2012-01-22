@@ -61,6 +61,7 @@ object AvroPrimitiveReader {
         case INT => (decoder: Decoder) => Some(decoder.readInt())
         case FLOAT => (decoder: Decoder) => Some(decoder.readFloat())
         case DOUBLE => (decoder: Decoder) => Some(decoder.readDouble())
+        case ENUM => (decoder: Decoder) => Some(decoder.readEnum())
       }
       new BasicAvroPrimitiveReader(decoder)
     }

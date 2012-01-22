@@ -48,6 +48,22 @@ class ReadSimpleColumns extends FunSuite {
     reader.close()
   }
 
+  test("reading enums") {
+    val schema = WriteSimpleColumns.makeSchema(("enum1", ENUM))
+
+    val root = ReadSimpleColumns.write(schema, 3, (encoder) => {
+      encoder.writeEnum(0)
+      encoder.writeEnum(2)
+      encoder.writeEnum(1)
+    })
+    val reader = new SplitSeriesReader(root)
+    assert(reader.next().get("enum1") === 0)
+    assert(reader.next().get("enum1") === 2)
+    assert(reader.next().get("enum1") === 1)
+    assert(!reader.hasNext())
+    reader.close()
+  }
+
   test("reading longs and strings") {
     val schema =
       WriteSimpleColumns.makeSchema(("long1", LONG), ("string2", STRING))
