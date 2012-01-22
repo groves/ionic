@@ -45,28 +45,19 @@ class AvroPrimitiveColumnReader(decoder: Decoder, field: Schema.Field, var entri
 }
 
 object AvroPrimitiveReader {
-  def apply(s: Schema, clauses: Iterable[Clause]) = {
-    if (s.getType == STRING) {
-      new StringAvroPrimitiveReader()
-    } else if (s.getType == BYTES) {
-      new BytesAvroPrimitiveReader()
-    } else if (s.getType == DOUBLE) {
+  def apply(s: Schema, clauses: Iterable[Clause]) = s.getType match {
+    case STRING => new StringAvroPrimitiveReader()
+    case BYTES => new BytesAvroPrimitiveReader()
+    case DOUBLE =>
       new AvroDoubleReader(clauses.collect({ case d: NumCond => d }).map(_.toDouble))
-    } else if (s.getType == FLOAT) {
+    case FLOAT =>
       new AvroFloatReader(clauses.collect({ case d: NumCond => d }).map(_.toDouble))
-    } else if (s.getType == LONG) {
+    case LONG =>
       new AvroLongReader(clauses.collect({ case n: NumCond => n }).map(_.toLong))
-    } else if (s.getType == ENUM) {
+    case ENUM =>
       new AvroEnumReader(s, clauses.collect({ case s: StringEquals => s }))
-    } else {
-      val decoder = s.getType match {
-        case BOOLEAN => (decoder: Decoder) => Some(decoder.readBoolean())
-        case INT => (decoder: Decoder) => Some(decoder.readInt())
-        case FLOAT => (decoder: Decoder) => Some(decoder.readFloat())
-        case DOUBLE => (decoder: Decoder) => Some(decoder.readDouble())
-      }
-      new BasicAvroPrimitiveReader(decoder)
-    }
+    case BOOLEAN => new BasicAvroPrimitiveReader((d :Decoder) => Some(d.readBoolean()))
+    case INT => new BasicAvroPrimitiveReader((d :Decoder) => Some(d.readInt()))
   }
 }
 
