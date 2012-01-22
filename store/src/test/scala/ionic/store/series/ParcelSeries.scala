@@ -115,4 +115,33 @@ class ParcelSeries extends FunSuite {
     assert(iter.size === 7)
     assert(!openWriter.dest.exists(), "Closing the last iter deletes the series")
   }
+
+  test("live enum series") {
+    val eschema =
+      WriteSimpleColumns.makeSchema(("timestamp", LONG), ("enum1", ENUM))
+
+    val parceler = new SeriesParceler(Paths.makeTempFs(), eschema.getFullName)
+
+    val writer = parceler.writer(eschema)
+    val out = new ByteBufferOutputStream()
+    val enc = EncoderFactory.get.directBinaryEncoder(out, null)
+    val datumWriter = new SpecificDatumWriter[GenericData.Record](eschema)
+    List((1234L, "zero"), (1235L, "three"), (1236L, "one")).map((t: Tuple2[Long, String]) => {
+      val record = new GenericData.Record(eschema)
+      record.put("timestamp", t._1)
+      record.put("enum1", t._2)
+      record
+    }).foreach(rec => {
+      datumWriter.write(rec, enc)
+      out.getBufferList().foreach(writer.write(_))
+    })
+    assert(parceler.reader().size === 3)
+    val reader = parceler.reader().iterator()
+    assert(reader.next().get("enum1") === 0)
+    assert(reader.next().get("enum1") === 3)
+    assert(reader.next().get("enum1") === 1)
+    writer.close()
+    waitForSplit(parceler)
+    assert(parceler.reader().size === 3)
+  }
 }
