@@ -37,10 +37,10 @@ class SplitSeriesReader(val source: Directory, where: Where = Where()) extends L
           createPrimitiveReader(f, meta.entries, new AvroLongReader(conds))
       }
     } else if (f.schema.getType == STRING) {
-      createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses),
+      createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema, fClauses),
         (in :InputStream) => { new SnappyInputStream(in) })
     } else {
-    createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema.getType, fClauses))
+    createPrimitiveReader(f, meta.entries, AvroPrimitiveReader(f.schema, fClauses))
     }
   })
 

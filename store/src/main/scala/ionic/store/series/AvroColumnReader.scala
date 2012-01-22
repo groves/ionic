@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import ionic.query.Clause
 import ionic.query.DoubleCond
 import ionic.query.LongCond
+import ionic.query.StringEquals
 import ionic.query.NumCond
 
 import org.apache.avro.Schema
@@ -44,24 +45,25 @@ class AvroPrimitiveColumnReader(decoder: Decoder, field: Schema.Field, var entri
 }
 
 object AvroPrimitiveReader {
-  def apply(t: Schema.Type, clauses: Iterable[Clause]) = {
-    if (t == STRING) {
+  def apply(s: Schema, clauses: Iterable[Clause]) = {
+    if (s.getType == STRING) {
       new StringAvroPrimitiveReader()
-    } else if (t == BYTES) {
+    } else if (s.getType == BYTES) {
       new BytesAvroPrimitiveReader()
-    } else if (t == DOUBLE) {
+    } else if (s.getType == DOUBLE) {
       new AvroDoubleReader(clauses.collect({ case d: NumCond => d }).map(_.toDouble))
-    } else if (t == FLOAT) {
+    } else if (s.getType == FLOAT) {
       new AvroFloatReader(clauses.collect({ case d: NumCond => d }).map(_.toDouble))
-    } else if (t == LONG) {
+    } else if (s.getType == LONG) {
       new AvroLongReader(clauses.collect({ case n: NumCond => n }).map(_.toLong))
+    } else if (s.getType == ENUM) {
+      new AvroEnumReader(s, clauses.collect({ case s: StringEquals => s }))
     } else {
-      val decoder = t match {
+      val decoder = s.getType match {
         case BOOLEAN => (decoder: Decoder) => Some(decoder.readBoolean())
         case INT => (decoder: Decoder) => Some(decoder.readInt())
         case FLOAT => (decoder: Decoder) => Some(decoder.readFloat())
         case DOUBLE => (decoder: Decoder) => Some(decoder.readDouble())
-        case ENUM => (decoder: Decoder) => Some(decoder.readEnum())
       }
       new BasicAvroPrimitiveReader(decoder)
     }
@@ -71,6 +73,19 @@ object AvroPrimitiveReader {
 trait AvroPrimitiveReader {
   def skip(decoder: Decoder) { read(decoder) }
   def read(decoder: Decoder): Option[Any]
+}
+
+class AvroEnumReader(s :Schema, conds: Iterable[StringEquals]) extends AvroPrimitiveReader {
+  val accepted :Set[Int] = conds.map((se :StringEquals) => s.getEnumOrdinal(se.value)).toSet
+  val meets :(Int) => Boolean =
+    if (accepted.isEmpty) (i :Int) => true
+    else accepted.contains(_)
+  override def skip(decoder: Decoder) { decoder.readEnum() }
+  def read(decoder: Decoder): Option[Int] = {
+    val value = decoder.readEnum()
+    if (!meets(value)) None
+    else Some(value)
+  }
 }
 
 class AvroLongReader(conds: Iterable[LongCond]) extends AvroPrimitiveReader {

@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import ionic.query.Query
 import java.util.concurrent.CountDownLatch
 
 import scala.collection.JavaConversions._
@@ -140,8 +141,10 @@ class ParcelSeries extends FunSuite {
     assert(reader.next().get("enum1") === 0)
     assert(reader.next().get("enum1") === 3)
     assert(reader.next().get("enum1") === 1)
+    assert(parceler.reader(Query.parse("ionic.Simple where enum1 = \"zero\"")).size === 1)
     writer.close()
     waitForSplit(parceler)
     assert(parceler.reader().size === 3)
+    assert(parceler.reader(Query.parse("ionic.Simple where enum1 = \"zero\"")).size === 1)
   }
 }

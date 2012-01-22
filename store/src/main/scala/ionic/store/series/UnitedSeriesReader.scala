@@ -26,7 +26,7 @@ class UnitedSeriesReader(val source: Directory, where: Where = Where(), var entr
   // TODO - freak if missing field for clause
   private val readers = schema.getFields.map(f =>
     new AvroPrimitiveColumnReader(recordDecoder, f, entries,
-      AvroPrimitiveReader(f.schema.getType, where.clauses.filter(_.f == f.name)))).toSeq
+      AvroPrimitiveReader(f.schema, where.clauses.filter(_.f == f.name)))).toSeq
 
   def read(old: GenericRecord = null): GenericRecord = {
     val record = if (old != null) { old } else { new GenericData.Record(schema) }
