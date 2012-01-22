@@ -1,5 +1,6 @@
 package ionic.store.series
 
+import java.io.InputStream
 import java.io.OutputStream
 import java.io.ByteArrayOutputStream
 
@@ -14,6 +15,8 @@ import org.apache.avro.io.EncoderFactory
 
 import org.scalatest.FunSuite
 
+import org.xerial.snappy.SnappyInputStream
+
 import com.threerings.fisy.Paths
 
 object WriteSimpleColumns {
@@ -27,13 +30,12 @@ object WriteSimpleColumns {
 class WriteSimpleColumns extends FunSuite {
   def check[T](defs: List[Tuple3[String, Schema.Type, List[T]]], enc: ((Encoder, T) => Unit),
     dec: ((Decoder, List[T]) => Unit),
-    outWrapper:(OutputStream) => OutputStream=(out :OutputStream) => { out }) {
+    inWrapper:(InputStream) => InputStream=(in :InputStream) => { in }) {
 
     val baos = new ByteArrayOutputStream
-    val out = outWrapper(baos)
-    val encoder = EncoderFactory.get().directBinaryEncoder(out, null)
+    val encoder = EncoderFactory.get().directBinaryEncoder(baos, null)
     0 until defs(0)._3.length foreach (x => defs.foreach(f => enc(encoder, f._3(x))))
-    out.close()
+    baos.close()
 
     val decoder = DecoderFactory.get().binaryDecoder(baos.toByteArray(), null)
     val root = Paths.makeMemoryFs()
@@ -45,7 +47,7 @@ class WriteSimpleColumns extends FunSuite {
 
     defs.foreach {
       case (name, _, values) => {
-        val in = writer.dest.open(name).read()
+        val in = inWrapper(writer.dest.open(name).read())
         val decoder = DecoderFactory.get().binaryDecoder(in, null)
         dec(decoder, values)
         assert(in.read() === -1)
@@ -86,7 +88,8 @@ class WriteSimpleColumns extends FunSuite {
   test("write strings") {
     check[String](List(("str", STRING, List("one", "two", "three"))),
       (enc, value) => enc.writeString(value),
-      (dec, values) => values.foreach(x => assert(dec.readString(null).toString === x)))
+      (dec, values) => values.foreach(x => assert(dec.readString(null).toString === x)),
+      new SnappyInputStream(_))
   }
 
   test("write doubles") {
