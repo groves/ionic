@@ -1,11 +1,12 @@
 package ionic.store.series
 
-import ionic.query.Query
 import java.util.concurrent.CountDownLatch
 
 import scala.collection.JavaConversions._
 
 import com.codahale.logula.Logging
+
+import ionic.query.Query
 
 import org.apache.avro.Schema.Type._
 import org.apache.avro.generic.GenericData

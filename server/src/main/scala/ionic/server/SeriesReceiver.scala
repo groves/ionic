@@ -1,12 +1,11 @@
 package ionic.server
 
-import java.util.UUID
-
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.Map
 
 import com.codahale.logula.Logging
 
+import ionic.store.Store
 import ionic.store.series.SeriesWriter
 import ionic.store.series.UnitedSeriesWriter
 
@@ -26,10 +25,7 @@ import org.jboss.netty.channel.ChannelStateEvent
 import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
-import com.threerings.fisy.Directory
-import com.threerings.fisy.impl.local.LocalDirectory
-
-class SeriesReceiver(base: LocalDirectory)
+class SeriesReceiver(store: Store)
   extends SimpleChannelUpstreamHandler with Logging {
   private val decoderFactory = DecoderFactory.get()
   private var decoder: BinaryDecoder = null
@@ -51,8 +47,7 @@ class SeriesReceiver(base: LocalDirectory)
         schemas.get(schema) match {
           case Some(idx) => writers(idx)
           case None => {
-            val subdir = schema.getFullName() + "/" + UUID.randomUUID().toString()
-            writers += new UnitedSeriesWriter(schema, base)
+            writers += store.writer(schema)
             schemas.put(schema, writers.size - 1)
             // Don't send the success until the write succeeds
             postwrite = () => {

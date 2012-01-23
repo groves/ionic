@@ -1,8 +1,8 @@
 package ionic.store.series
 
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
-import java.io.ByteArrayOutputStream
 
 import scala.collection.JavaConversions._
 

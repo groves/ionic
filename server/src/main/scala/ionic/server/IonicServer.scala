@@ -8,6 +8,7 @@ import com.codahale.logula.Logging
 
 import ionic.net.AvroIntFrameDecoder
 import ionic.net.AvroIntLengthFieldPrepender
+import ionic.store.Store
 
 import org.apache.avro.io.EncoderFactory
 import org.apache.log4j.Level
@@ -36,6 +37,7 @@ import com.threerings.fisy.impl.local.LocalDirectory
 /** Binds a server with the given bootstrap, which must have a localAddress set on it. */
 class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
   val allChannels = new DefaultChannelGroup()
+  val store = new Store(base)
   val tracker = new SimpleChannelUpstreamHandler() {
     override def channelOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
       allChannels.add(e.getChannel())
@@ -62,7 +64,7 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
     override def getPipeline() = {
       // TODO - add an executor since we're doing disk IO
       Channels.pipeline(new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(),
-        new SeriesReceiver(base), tracker)
+        new SeriesReceiver(store), tracker)
     }
   })
   log.info("Binding to %s", boot.getOption("localAddress"))
@@ -70,6 +72,7 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
   val address: SocketAddress = channel.getLocalAddress
 
   def shutdown() {
+    // TODO - close store
     allChannels.close().awaitUninterruptibly()
     boot.releaseExternalResources()
   }

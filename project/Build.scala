@@ -10,7 +10,7 @@ object IonicBuild extends Build {
     scalaVersion := "2.9.0-1",
     scalacOptions ++= Seq("-deprecation"),
     libraryDependencies ++= Seq(
-      "com.google.guava" % "guava" % "r09",
+      "com.google.guava" % "guava" % "11.0.1",
       "com.codahale" %% "logula" % "2.1.3",
       "org.slf4j" % "slf4j-simple" % "1.6.1",
       "org.apache.avro" % "avro" % "1.5.1",

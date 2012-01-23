@@ -1,6 +1,7 @@
 package ionic.store.series
 
 import java.io.InputStream
+
 import scala.collection.JavaConversions._
 
 import ionic.query.LongCond
@@ -13,8 +14,9 @@ import org.apache.avro.generic.GenericData
 import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.DecoderFactory
 
-import com.threerings.fisy.Directory
 import org.xerial.snappy.SnappyInputStream
+
+import com.threerings.fisy.Directory
 
 class SplitSeriesReader(val source: Directory, where: Where = Where()) extends LookaheadReader {
   private val schema = SeriesReader.readSchema(source)

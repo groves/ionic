@@ -100,7 +100,6 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   def writer(schema: Schema): UnitedSeriesWriter = {
     val writer = new UnitedSeriesWriter(schema, base)
     writer.closed.connect(() => {
-      // TODO - thread safety of writer transfer
       splitter.execute(() => {
         val split = SplitSeriesWriter.transferFrom(base, writer)
         writers synchronized {

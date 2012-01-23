@@ -5,8 +5,8 @@ import java.nio.ByteBuffer
 import ionic.query.Clause
 import ionic.query.DoubleCond
 import ionic.query.LongCond
-import ionic.query.StringEquals
 import ionic.query.NumCond
+import ionic.query.StringEquals
 
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type._
