@@ -1,7 +1,8 @@
 package ionic.store.series
 
-import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Buffer
@@ -25,7 +26,7 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
   import ionic.util.RunnableImplicit._
 
   // Exposed for testing
-  protected[series] val splitter :Executor = Executors.newSingleThreadExecutor()
+  protected[series] val splitter :ExecutorService = Executors.newSingleThreadExecutor()
 
   // open series writers, readers on those writers, and fully-transferred splits. All access to
   // these variables post-construction must be inside synchronization on writers.
@@ -72,7 +73,7 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     }
   }
 
-  val allQuery = Query.parse(name)
+  private val allQuery = Query.parse(name)
   def reader(query: Query = allQuery) = new CloseableIterable[GenericRecord] {
     def iterator() = new CloseableIterator[GenericRecord] {
       var closed = false
@@ -97,10 +98,11 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
     }
   }
 
-  def writer(schema: Schema): UnitedSeriesWriter = {
+  def writer(schema: Schema): UnitedSeriesWriter = writers synchronized {
+    assert(!splitter.isShutdown, "Can't create a writer after the parceler has been shutdown!")
     val writer = new UnitedSeriesWriter(schema, base)
     writer.closed.connect(() => {
-      splitter.execute(() => {
+      val split :Runnable = () => {
         val split = SplitSeriesWriter.transferFrom(base, writer)
         writers synchronized {
           splits += split.dest
@@ -110,12 +112,41 @@ class SeriesParceler(val base: LocalDirectory, name: String) extends Logging {
             writer.dest.delete()
           }
         }
-      })
+      }
+      writers synchronized { if (!splitter.isShutdown) splitter.execute(split) }
     })
-    writers synchronized {
-      writers += writer
-      openUnited.add(writer.dest)
-    }
+    writers += writer
+    openUnited.add(writer.dest)
     writer
+  }
+
+  /**
+   * Stops any new writers from being opened, but allows existing writers to continue till they've
+   * been closed, and allows for new readers.
+   */
+  def shutdown() = writers synchronized { splitter.shutdown() }
+
+  /**
+   * Closes all writers and waits for active splits another 60 seconds to complete.
+   */
+  def awaitTermination() {
+    shutdown() // ensure shutdown has been called
+    writers synchronized { writers.foreach(_.close()) }
+    if (splitter.isTerminated()) return
+    try {
+      // Wait a while for existing tasks to terminate
+      if (!splitter.awaitTermination(60, TimeUnit.SECONDS)) {
+        splitter.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if (!splitter.awaitTermination(60, TimeUnit.SECONDS)) {
+          log.warn("Splitter for '%s' didn't terminate over 2 minutes", name)
+        }
+      }
+    } catch {
+      case ie :InterruptedException => {
+        splitter.shutdownNow() // (Re-)Cancel if current thread also interrupted
+        Thread.currentThread().interrupt() // Preserve interrupt status
+      }
+    }
   }
 }

@@ -1,5 +1,7 @@
 package ionic.store
 
+import scala.collection.JavaConversions._
+
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
@@ -24,4 +26,7 @@ class Store (base :LocalDirectory) {
     val parsed = Query.parse(query)
     parcelers.get(parsed.from).reader(parsed)
   }
+  def shutdown() { parcelers.asMap.values.foreach(_.shutdown) }
+
+  def awaitTermination() { parcelers.asMap.values.foreach(_.awaitTermination) }
 }

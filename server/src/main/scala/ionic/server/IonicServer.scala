@@ -72,8 +72,9 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
   val address: SocketAddress = channel.getLocalAddress
 
   def shutdown() {
-    // TODO - close store
-    allChannels.close().awaitUninterruptibly()
+    store.shutdown()// Stop new writers from opening and splits from running on closed writers
+    allChannels.close().awaitUninterruptibly()// Close all open connections and thereby writers
+    store.awaitTermination()// Wait for splits that were started before the shutdown call to finish
     boot.releaseExternalResources()
   }
 }
