@@ -44,16 +44,13 @@ class Client(private val boot: ClientBootstrap) extends Logging {
 
   def insert(record: IndexedRecord, waitForSending: Boolean = false) {
     if (mapper.errored) return // Mapper warned about it
-    if (waitForSending) {
-      queue.put(record)
-    } else if (!queue.offer(record)) {
+    if (waitForSending) queue.put(record)
+    else if (!queue.offer(record)) {
       log.warn("Queue overflowed")
       return
     }
     sender ! QueueInserted
   }
 
-  def shutdown() {
-    sender.shutdown()
-  }
+  def shutdown() { sender.shutdown() }
 }
