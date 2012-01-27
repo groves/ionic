@@ -88,13 +88,19 @@ case class WriterReady(writer: Actor)
 case class WriteSucceeded(ctx: NettyMsgContext)
 case class WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord)
 
-class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with ChannelFutureListener with Logging {
+class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with Logging {
+  import ionic.client.ChannelFutureListenerImplicit._
   var chan: Channel = null
   var ctxs: List[NettyMsgContext] = List(0 until 10).map(_ => new NettyMsgContext(this, mapper))
   val initialLength = ctxs.length
   start
   def act() {
-    boot.connect().addListener(this) // Make the initial connection as we're ready to get the channel
+     // Make the initial connection as we're ready to get the channel
+    boot.connect().addListener((future: ChannelFuture) => {
+      if (future.isSuccess()) this ! future.getChannel
+      else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
+      else log.warn("Ionic connection cancelled?")
+    })
     write()
   }
 
@@ -154,12 +160,6 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) 
         log.warn("NettyWriter received unknown message: %s", msg)
         drain(latch)
     }
-  }
-
-  override def operationComplete(future: ChannelFuture) {
-    if (future.isSuccess()) this ! future.getChannel
-    else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
-    else log.warn("Ionic connection cancelled?")
   }
 }
 
