@@ -37,9 +37,7 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, m
 
   def act() = react {
     case QueueInserted => {
-      if (capacity > 0) {
-        sendFromQueue()
-      }
+      if (capacity > 0) sendFromQueue()
       act()
     }
     case WriterReady(_) => {
@@ -47,9 +45,7 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, m
       sendFromQueue()
       act()
     }
-    case Shutdown(latch) => {
-      drain(latch)
-    }
+    case Shutdown(latch) => drain(latch)
     case msg => {
       log.warn("RecordSender received unknown message: %s", msg)
       act()
@@ -63,11 +59,8 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, m
     }
     case WriterReady(_) => {
       capacity += 1
-      if (!sendFromQueue()) {
-        netty ! Shutdown(latch)
-      } else {
-        drain(latch)
-      }
+      if (!sendFromQueue()) netty ! Shutdown(latch)
+      else drain(latch)
     }
     case TIMEOUT => {
       log.warn("Didn't get a writer ready within 10 seconds, shutting down without finishing draining queue")
@@ -108,6 +101,7 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) 
   def write(): Unit = react {
     case chan: Channel => {
       this.chan = chan
+      // TODO - monitor for closed, switch at that point
       ctxs.foreach(_ => listener ! WriterReady(this))
       write()
     }
@@ -127,17 +121,13 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) 
       listener ! WriterReady(this)
       write()
     }
-    case Shutdown(latch) =>
-      drain(latch)
-    case msg =>
-      log.warn("NettyWriter received unknown message: %s", msg)
+    case Shutdown(latch) => drain(latch)
+    case msg => log.warn("NettyWriter received unknown message: %s", msg)
   }
 
   def drain(latch: CountDownLatch): Unit = {
     def close() = {
-      if (chan != null) {
-        chan.close()
-      }
+      if (chan != null) chan.close()
       latch.countDown()
     }
     if (ctxs.length == initialLength) {
@@ -167,13 +157,9 @@ class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) 
   }
 
   override def operationComplete(future: ChannelFuture) {
-    if (future.isSuccess()) {
-      this ! future.getChannel
-    } else if (future.getCause() != null) {
-      log.warn(future.getCause(), "Failed to connect to ionic")
-    } else {
-      log.warn("Ionic connection cancelled?")
-    }
+    if (future.isSuccess()) this ! future.getChannel
+    else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
+    else log.warn("Ionic connection cancelled?")
   }
 }
 
@@ -201,9 +187,9 @@ class NettyMsgContext(writer: Actor, mapper: SchemaMapper) extends ChannelFuture
 
   override def operationComplete(future: ChannelFuture) {
     buf.clear()
-    if (future.isSuccess()) {
-      writer ! WriteSucceeded(this)
-    } else if (future.getCause() != null) { // Failure! Dreaded, inevitable failure!
+    if (future.isSuccess()) writer ! WriteSucceeded(this)
+    else if (future.getCause() != null) { // Failure! Dreaded, inevitable failure!
+      // TODO - skip logging if connection closed
       log.warn(future.getCause(), "Write operation failed!")
       writer ! WriteFailed(this, rec)
     } else { // Cancelled? Uhh, who's calling cancel on our futures?
