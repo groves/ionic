@@ -1,0 +1,14 @@
+Client queues up to a configurable number of records in memory, defaulting to 1024
+When memory hits queue limit records, those records are dumped to disk
+As senders become available, they pull from disk first, then memory
+
+On server error or disconnect, inflight messages are pushed back to memory
+
+On shutdown, if the conn is open, the client takes 60 seconds to flush the queue
+If after 60 seconds messages are still in memory, they're flushed to disk
+
+On startup, the disk items from previous runs are treated like disk items written in this instance
+
+As the disk queue grows while senders are unavailable due to the server being down or the client being misconfigured, logs are emitted for every 15 minutes during which a record send was attempted without any going over the wire
+
+The memory queue can be configured to 0 items, which means items are always written to disk and then sent

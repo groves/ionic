@@ -1,5 +1,9 @@
 package ionic.client
 
+import ionic.net.AvroIntFrameDecoder
+import ionic.net.AvroIntLengthFieldPrepender
+import org.jboss.netty.channel.Channels
+import java.nio.channels.ClosedChannelException
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -21,59 +25,139 @@ import org.jboss.netty.channel.ChannelFuture
 import org.jboss.netty.channel.ChannelFutureListener
 
 case class QueueInserted()
-class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with Logging {
-  val netty: NettyWriter = new NettyWriter(this, boot, mapper)
-  var capacity: Int = 0
+case class CtxReady(ctx :NettyMsgContext)
+case class CtxFailed(ctx: NettyMsgContext, rec: IndexedRecord, cause :Throwable)
+case class ChannelClosed(chan: Channel)
+case class ServerError(error: String)
+case class Shutdown(latch: CountDownLatch)
+
+class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) extends Actor with Logging {
+  import ionic.client.ChannelFutureListenerImplicit._
+
+  var ctxs :List[NettyMsgContext] = List()
+  val initialLength = 10
+  var chan: Channel = null
+  var mapper: SchemaMapper = null
   start
 
-  def sendFromQueue(): Boolean = queue.poll() match {
+  def act () {
+    mapper = new SchemaMapper(this)
+    // Make the initial connection as we're ready to get the channel
+    boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
+      new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(), mapper)))
+    boot.connect().addListener((future: ChannelFuture) => {
+     if (future.isSuccess()) this ! future.getChannel
+     // TODO - attempt reconnect after delay
+     else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
+     else log.warn("Ionic connection cancelled?")
+    })
+    withConn()
+  }
+
+  def sendFromQueue(ctx :NettyMsgContext): Boolean = queue.poll() match {
     case null => false
     case rec => {
-      capacity -= 1
-      netty ! rec
+      ctx.write(rec)
       true
     }
   }
 
-  def act() = react {
+  def reconnect() = {
+    chan = null
+    ctxs = List()
+    act()
+  }
+
+  def withConn() :Unit = react {
+    case newChan :Channel => {
+      assert(chan == null, "Got a new channel while we still have a channel?")
+      chan = newChan
+      chan.getCloseFuture.addListener((_ :ChannelFuture) => { this ! ChannelClosed(newChan) })
+      (0 until initialLength).foreach((_) => this ! CtxReady(new NettyMsgContext(chan, this, mapper)))
+    }
     case QueueInserted => {
-      if (capacity > 0) sendFromQueue()
-      act()
+      if (!ctxs.isEmpty && sendFromQueue(ctxs.head)) ctxs = ctxs.tail
+      //TODO - spool if over 1024 in queue
+      withConn()
     }
-    case WriterReady(_) => {
-      capacity += 1
-      sendFromQueue()
-      act()
+    case CtxReady(ctx) => {
+      if (!sendFromQueue(ctx)) ctxs = ctx :: ctxs
+      withConn()
     }
-    case Shutdown(latch) => drain(latch)
+    case CtxFailed(ctx, rec, cause) => {
+      queue.put(rec)
+      this ! QueueInserted
+      if (ctx.chan == chan) reconnect()
+      // If the channel has already changed, we're reconnecting
+    }
+    case ChannelClosed(closed) => {
+      assert(closed == chan, "Unknown channel closed?")
+      log.warn("Lost connection; reconnecting")
+      reconnect()
+    }
+    case ServerError(error) => {
+      chan = null
+      ctxs = List()
+      // TODO - have server send if retry should be attempted
+      log.warn("Throwing up hands due to server error: %s", error)
+      spool()
+    }
+    case Shutdown(latch) => {
+      if (needsDrain) drain(List(latch))
+      else close(List(latch))
+    }
     case msg => {
       log.warn("RecordSender received unknown message: %s", msg)
-      act()
+      withConn()
     }
   }
 
-  def drain(latch: CountDownLatch): Unit = reactWithin(10000) {
+  def needsDrain = ctxs.length < initialLength && chan != null
+
+  def spool () {}// TODO - in error state just write to disk
+
+  def drained(ctx :NettyMsgContext) :Boolean = {
+    ctxs = ctx ::ctxs
+    return !needsDrain
+  }
+
+  def drain(latches: List[CountDownLatch]): Unit = reactWithin(10000) {
     case QueueInserted => {
       log.warn("Got queue insertion after being asked to shutdown")
-      drain(latch)
+      drain(latches)
     }
-    case WriterReady(_) => {
-      capacity += 1
-      if (!sendFromQueue()) netty ! Shutdown(latch)
-      else drain(latch)
+    case CtxReady(ctx) => {
+      if (!sendFromQueue(ctx) && drained(ctx)) close(latches)
+      else drain(latches)
+    }
+    case CtxFailed(ctx, rec, cause) => {
+      queue.put(rec)
+      cause match {
+        case cce :ClosedChannelException => {}
+        case _ => log.warn(cause, "Got error from writing while draining")
+      }
+      if (drained(ctx)) close(latches)
+      else drain(latches)
+    }
+    case ServerError(error) => {
+      log.warn("Got error from server while draining: %s", error)
+      close(latches)
     }
     case TIMEOUT => {
       log.warn("Didn't get a writer ready within 10 seconds, shutting down without finishing draining queue")
-      netty ! Shutdown(latch)
+      close(latches)
     }
-    case Shutdown(latch) => {
-      log.warn("Asked to shutdown multiple times")
-      drain(latch)
-    }
+    case Shutdown(latch) => drain(latch :: latches)
     case msg => {
       log.warn("RecordSender received unknown message: %s", msg)
-      drain(latch)
+      drain(latches)
     }
+  }
+
+  def close(latches :List[CountDownLatch]): Unit = {
+    if (chan != null) chan.close()
+    // TODO - queue to disk
+    latches.foreach(_.countDown())
   }
 
   def shutdown() {
@@ -83,92 +167,12 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap, m
   }
 }
 
-case class Shutdown(latch: CountDownLatch)
-case class WriterReady(writer: Actor)
-case class WriteSucceeded(ctx: NettyMsgContext)
-case class WriteFailed(ctx: NettyMsgContext, rec: IndexedRecord)
-
-class NettyWriter(listener: Actor, boot: ClientBootstrap, mapper: SchemaMapper) extends Actor with Logging {
-  import ionic.client.ChannelFutureListenerImplicit._
-  var chan: Channel = null
-  var ctxs: List[NettyMsgContext] = List(0 until 10).map(_ => new NettyMsgContext(this, mapper))
-  val initialLength = ctxs.length
-  start
-  def act() {
-     // Make the initial connection as we're ready to get the channel
-    boot.connect().addListener((future: ChannelFuture) => {
-      if (future.isSuccess()) this ! future.getChannel
-      else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
-      else log.warn("Ionic connection cancelled?")
-    })
-    write()
-  }
-
-  def write(): Unit = react {
-    case chan: Channel => {
-      this.chan = chan
-      // TODO - monitor for closed, switch at that point
-      ctxs.foreach(_ => listener ! WriterReady(this))
-      write()
-    }
-    case rec: IndexedRecord => {
-      ctxs.head.write(chan, rec)
-      ctxs = ctxs.tail
-      write()
-    }
-    case WriteSucceeded(ctx) => {
-      ctxs = ctx :: ctxs
-      listener ! WriterReady(this)
-      write()
-    }
-    // TODO - reconnect, return rec to sender for spooling
-    case WriteFailed(ctx, rec) => {
-      ctxs = ctx :: ctxs
-      listener ! WriterReady(this)
-      write()
-    }
-    case Shutdown(latch) => drain(latch)
-    case msg => log.warn("NettyWriter received unknown message: %s", msg)
-  }
-
-  def drain(latch: CountDownLatch): Unit = {
-    def close() = {
-      if (chan != null) chan.close()
-      latch.countDown()
-    }
-    if (ctxs.length == initialLength) {
-      close()
-      return
-    }
-    reactWithin(10000) {
-      case rec: IndexedRecord =>
-        log.warn("Asked to write a record after receiving shutdown: %s", rec)
-        drain(latch)
-      case Shutdown(_) =>
-        log.warn("Asked to shutdown multiple times. Ignoring additonal latch.")
-        drain(latch)
-      case WriteSucceeded(ctx) =>
-        ctxs = ctx :: ctxs
-        drain(latch)
-      case WriteFailed(ctx, _) =>
-        ctxs = ctx :: ctxs
-        drain(latch)
-      case TIMEOUT =>
-        log.warn("Timed out waiting for messages to finish sending. Closing anyway.")
-        close()
-      case msg =>
-        log.warn("NettyWriter received unknown message: %s", msg)
-        drain(latch)
-    }
-  }
-}
-
-class NettyMsgContext(writer: Actor, mapper: SchemaMapper) extends ChannelFutureListener with Logging {
+class NettyMsgContext(val chan :Channel, writer: Actor, mapper: SchemaMapper) extends ChannelFutureListener with Logging {
   val buf = ChannelBuffers.dynamicBuffer(512)
   val enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
   var rec: IndexedRecord = null
 
-  def write(c: Channel, record: IndexedRecord) {
+  def write(record: IndexedRecord) {
     rec = record
     mapper(record.getSchema()) match {
       case Some(idx) => {
@@ -182,16 +186,14 @@ class NettyMsgContext(writer: Actor, mapper: SchemaMapper) extends ChannelFuture
     }
     // TODO - cache writers per schema
     new SpecificDatumWriter(record.getSchema).write(record, enc)
-    c.write(buf).addListener(this)
+    chan.write(buf).addListener(this)
   }
 
   override def operationComplete(future: ChannelFuture) {
     buf.clear()
-    if (future.isSuccess()) writer ! WriteSucceeded(this)
+    if (future.isSuccess()) writer ! CtxReady(this)
     else if (future.getCause() != null) { // Failure! Dreaded, inevitable failure!
-      // TODO - skip logging if connection closed
-      log.warn(future.getCause(), "Write operation failed!")
-      writer ! WriteFailed(this, rec)
+      writer ! CtxFailed(this, rec, future.getCause())
     } else { // Cancelled? Uhh, who's calling cancel on our futures?
       log.warn("Got something other than failure or success to a write? [cancelled=%s]",
         future.isCancelled)

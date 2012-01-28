@@ -34,16 +34,9 @@ object Client {
 class Client(private val boot: ClientBootstrap) extends Logging {
   def this(host: String, port: Int) = this(Client.makeBootstrap(host, port))
   val queue: BlockingQueue[IndexedRecord] = new ArrayBlockingQueue(1024)
-  val mapper: SchemaMapper = new SchemaMapper()
-  boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
-    new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(), mapper)))
-
-  val sender = new RecordSender(queue, boot, mapper)
-
-  def errored() = mapper.errored
+  val sender = new RecordSender(queue, boot)
 
   def insert(record: IndexedRecord, waitForSending: Boolean = false) {
-    if (mapper.errored) return // Mapper warned about it
     if (waitForSending) queue.put(record)
     else if (!queue.offer(record)) {
       log.warn("Queue overflowed")
