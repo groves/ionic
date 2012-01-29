@@ -12,13 +12,9 @@ import com.codahale.logula.Logging
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 
-import ionic.net.AvroIntFrameDecoder
-import ionic.net.AvroIntLengthFieldPrepender
-
 import org.apache.avro.generic.IndexedRecord
 
 import org.jboss.netty.bootstrap.ClientBootstrap
-import org.jboss.netty.channel.Channels
 import org.jboss.netty.channel.socket.oio.OioClientSocketChannelFactory
 
 object Client {
