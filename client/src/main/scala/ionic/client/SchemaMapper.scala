@@ -1,5 +1,6 @@
 package ionic.client
 
+import org.jboss.netty.channel.ExceptionEvent
 import scala.actors.Actor
 import java.util.concurrent.ConcurrentHashMap
 
@@ -30,5 +31,9 @@ class SchemaMapper(listener :Actor) extends SimpleChannelUpstreamHandler with Lo
       log.info("Mapping '%s' to '%s'", schema, idx)
       schemas(schema) = idx
     }
+  }
+
+  override def exceptionCaught(ctx :ChannelHandlerContext, e :ExceptionEvent) {
+    log.debug(e.getCause, "Thrown by conn; should be passed to the receiver by the ctx writer")
   }
 }
