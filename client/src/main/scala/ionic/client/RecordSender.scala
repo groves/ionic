@@ -52,17 +52,21 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
   var mapper: SchemaMapper = null
   start
 
-  def act () {
+  def connect () {
     mapper = new SchemaMapper(this)
     // Make the initial connection as we're ready to get the channel
     boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
       new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(), mapper)))
     boot.connect().addListener((future: ChannelFuture) => {
-     if (future.isSuccess()) this ! future.getChannel
-     // TODO - attempt reconnect after delay
-     else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
-     else log.warn("Ionic connection cancelled?")
+      if (future.isSuccess()) this ! future.getChannel
+      // TODO - attempt reconnect after delay
+      else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
+      else log.warn("Ionic connection cancelled?")
     })
+  }
+
+  def act () {
+    connect()
     withConn()
   }
 
@@ -77,7 +81,12 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
   def reconnect() = {
     chan = null
     ctxs = List()
-    act()
+    // TODO - falloff, watch for intervening shutdown, etc
+    Actor.actor({
+      Actor.reactWithin(100) {
+        case TIMEOUT => connect()
+      }
+    })
   }
 
   def withConn() :Unit = react {
@@ -101,12 +110,13 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
       queue.put(rec)
       this ! QueueInserted
       if (ctx.chan == chan) reconnect()
-      // If the channel has already changed, we're reconnecting
+      withConn()
     }
     case ChannelClosed(closed) => {
       assert(closed == chan, "Unknown channel closed?")
       log.warn("Lost connection; reconnecting")
       reconnect()
+      withConn()
     }
     case ServerError(error) => {
       chan = null

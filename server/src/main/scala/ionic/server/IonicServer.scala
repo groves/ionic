@@ -74,6 +74,7 @@ class IonicServer(boot: ServerBootstrap, base: LocalDirectory) extends Logging {
   def shutdown() {
     store.shutdown()// Stop new writers from opening and splits from running on closed writers
     allChannels.close().awaitUninterruptibly()// Close all open connections and thereby writers
+    channel.close().awaitUninterruptibly()
     store.awaitTermination()// Wait for splits that were started before the shutdown call to finish
     boot.releaseExternalResources()
   }

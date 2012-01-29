@@ -23,7 +23,7 @@ import com.threerings.fisy.Directory
 import com.threerings.fisy.Paths
 import com.threerings.fisy.impl.local.LocalDirectory
 
-class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
+class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter with Logging {
   Logging.configure { log => log.level = Level.WARN }
   val base: LocalDirectory = Paths.makeTempFs()
 
@@ -48,19 +48,6 @@ class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
     assert(1000 === EntryReader("ionic.test.event", base).size)
   }
 
-  test("send 1000 records from client to server, shutdown server first") {
-    (0 until 1000).foreach(_ => client.insert(new Event()))
-    val client2Boot = new ClientBootstrap(new DefaultLocalClientChannelFactory())
-    client2Boot.setOption("remoteAddress", addr)
-    val client2 = new Client(client2Boot)
-    (0 until 5).foreach(_ => client2.insert(new Event()))
-    client.shutdown()
-    server.shutdown()
-    client2.shutdown()
-    // Starting a new EntryReader does a split on the data from client2
-    assert(1005 === EntryReader("ionic.test.event", base).size)
-  }
-
   test("send 5000 records from client to server at write rate") {
     (0 until 5000).foreach(_ => client.insert(new Event(), waitForSending = true))
     client.shutdown()
@@ -76,6 +63,5 @@ class SendRecord extends FunSuite with OneInstancePerTest with BeforeAndAfter {
     server.shutdown()
     base.file.setWritable(true)
     assert(0 === EntryReader("ionic.test.event", base).size)
-    assert(client.errored)
   }
 }
