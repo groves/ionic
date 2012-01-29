@@ -168,7 +168,9 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
   }
 }
 
-class NettyMsgContext(val chan :Channel, writer: Actor, mapper: SchemaMapper) extends ChannelFutureListener with Logging {
+class NettyMsgContext(val chan :Channel, writer: Actor, mapper: SchemaMapper) extends Logging {
+  import ionic.client.ChannelFutureListenerImplicit._
+
   val buf = ChannelBuffers.dynamicBuffer(512)
   val enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
   var rec: IndexedRecord = null
@@ -187,17 +189,13 @@ class NettyMsgContext(val chan :Channel, writer: Actor, mapper: SchemaMapper) ex
     }
     // TODO - cache writers per schema
     new SpecificDatumWriter(record.getSchema).write(record, enc)
-    chan.write(buf).addListener(this)
-  }
 
-  override def operationComplete(future: ChannelFuture) {
-    buf.clear()
-    if (future.isSuccess()) writer ! CtxReady(this)
-    else if (future.getCause() != null) { // Failure! Dreaded, inevitable failure!
-      writer ! CtxFailed(this, rec, future.getCause())
-    } else { // Cancelled? Uhh, who's calling cancel on our futures?
-      log.warn("Got something other than failure or success to a write? [cancelled=%s]",
-        future.isCancelled)
-    }
+    chan.write(buf).addListener((future :ChannelFuture) => {
+      buf.clear()
+      if (future.isSuccess()) writer ! CtxReady(this)
+      else if (future.getCause() != null) writer ! CtxFailed(this, rec, future.getCause())
+      else log.warn("Got something other than failure or success to a write? [cancelled=%s]",
+          future.isCancelled)
+    })
   }
 }
