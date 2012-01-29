@@ -13,6 +13,7 @@ import scala.collection.mutable.ConcurrentMap
 
 import com.codahale.logula.Logging
 
+import ionic.client.ChannelFutureListenerImplicit._
 import ionic.net.AvroIntFrameDecoder
 import ionic.net.AvroIntLengthFieldPrepender
 
@@ -29,14 +30,14 @@ import org.jboss.netty.buffer.ChannelBufferOutputStream
 import org.jboss.netty.buffer.ChannelBuffers
 import org.jboss.netty.channel.Channel
 import org.jboss.netty.channel.ChannelFuture
-import org.jboss.netty.channel.ChannelFutureListener
 import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.Channels
 import org.jboss.netty.channel.ExceptionEvent
 import org.jboss.netty.channel.MessageEvent
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler
 
-case class QueueInserted()
+case object QueueInserted
+case class Connected(chan :Channel, mapper :SchemaMapper)
 case class CtxReady(ctx :NettyMsgContext)
 case class CtxFailed(ctx: NettyMsgContext, rec: IndexedRecord, cause :Throwable)
 case class ChannelClosed(chan: Channel)
@@ -44,31 +45,11 @@ case class ServerError(error: String)
 case class Shutdown(latch: CountDownLatch)
 
 class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) extends Actor with Logging {
-  import ionic.client.ChannelFutureListenerImplicit._
-
+  val connector :Connector = new Connector(this, boot)
   var ctxs :List[NettyMsgContext] = List()
   val initialLength = 10
   var chan: Channel = null
-  var mapper: SchemaMapper = null
   start
-
-  def connect () {
-    mapper = new SchemaMapper(this)
-    // Make the initial connection as we're ready to get the channel
-    boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
-      new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(), mapper)))
-    boot.connect().addListener((future: ChannelFuture) => {
-      if (future.isSuccess()) this ! future.getChannel
-      // TODO - attempt reconnect after delay
-      else if (future.getCause() != null) log.warn(future.getCause(), "Failed to connect")
-      else log.warn("Ionic connection cancelled?")
-    })
-  }
-
-  def act () {
-    connect()
-    withConn()
-  }
 
   def sendFromQueue(ctx :NettyMsgContext): Boolean = queue.poll() match {
     case null => false
@@ -78,45 +59,43 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
     }
   }
 
-  def reconnect() = {
+  def reconnect(closed :Channel) :Unit = {
+    if (chan == null) return // Already reconnecting
+    else if (closed != chan) {
+      log.warn("Another channel connected besides the closed one?")
+      return
+    }
     chan = null
     ctxs = List()
-    // TODO - falloff, watch for intervening shutdown, etc
-    Actor.actor({
-      Actor.reactWithin(100) {
-        case TIMEOUT => connect()
-      }
-    })
+    connector ! 'connect
   }
 
-  def withConn() :Unit = react {
-    case newChan :Channel => {
+  def act() :Unit = react {
+    case Connected(newChan :Channel, mapper :SchemaMapper) => {
       assert(chan == null, "Got a new channel while we still have a channel?")
       chan = newChan
       chan.getCloseFuture.addListener((_ :ChannelFuture) => { this ! ChannelClosed(newChan) })
       (0 until initialLength).foreach((_) => this ! CtxReady(new NettyMsgContext(chan, this, mapper)))
-      withConn()
+      act()
     }
     case QueueInserted => {
       if (!ctxs.isEmpty && sendFromQueue(ctxs.head)) ctxs = ctxs.tail
       //TODO - spool if over 1024 in queue
-      withConn()
+      act()
     }
     case CtxReady(ctx) => {
       if (!sendFromQueue(ctx)) ctxs = ctx :: ctxs
-      withConn()
+      act()
     }
     case CtxFailed(ctx, rec, cause) => {
       queue.put(rec)
       this ! QueueInserted
-      if (ctx.chan == chan) reconnect()
-      withConn()
+      reconnect(ctx.chan)
+      act()
     }
     case ChannelClosed(closed) => {
-      assert(closed == chan, "Unknown channel closed?")
-      log.warn("Lost connection; reconnecting")
-      reconnect()
-      withConn()
+      reconnect(closed)
+      act()
     }
     case ServerError(error) => {
       chan = null
@@ -126,12 +105,13 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
       spool()
     }
     case Shutdown(latch) => {
+      connector ! 'shutdown
       if (needsDrain) drain(List(latch))
       else close(List(latch))
     }
     case msg => {
       log.warn("RecordSender received unknown message: %s", msg)
-      withConn()
+      act()
     }
   }
 
@@ -210,8 +190,6 @@ class SchemaMapper(listener :Actor) extends SimpleChannelUpstreamHandler with Lo
 }
 
 class NettyMsgContext(val chan :Channel, writer: Actor, mapper: SchemaMapper) extends Logging {
-  import ionic.client.ChannelFutureListenerImplicit._
-
   val buf = ChannelBuffers.dynamicBuffer(512)
   val enc = EncoderFactory.get.directBinaryEncoder(new ChannelBufferOutputStream(buf), null)
   var rec: IndexedRecord = null
@@ -239,4 +217,55 @@ class NettyMsgContext(val chan :Channel, writer: Actor, mapper: SchemaMapper) ex
           future.isCancelled)
     })
   }
+}
+
+case class ConnectingFailed(retryDelay :Long)
+class Connector(user :Actor, boot :ClientBootstrap) extends Actor with Logging {
+
+  var consecutiveFailures :Int = 0
+
+  start
+
+  def awaitOrders () :Unit = react {
+    case 'connect => act()
+    case 'shutdown => exit()
+  }
+
+  def awaitConnection () = react {
+    case 'connected => awaitOrders()
+    case ConnectingFailed(delay) => awaitRetry(delay)
+    case 'shutdown => exit()
+  }
+
+  def awaitRetry (retryDelay :Long) = reactWithin(retryDelay) {
+    case TIMEOUT => act()
+    case 'shutdown => exit()
+  }
+
+  def act () :Unit = {
+    val mapper = new SchemaMapper(user)
+    // Make the initial connection as we're ready to get the channel
+    boot.setPipelineFactory(Channels.pipelineFactory(Channels.pipeline(
+      new AvroIntLengthFieldPrepender(), new AvroIntFrameDecoder(), mapper)))
+    boot.connect().addListener((future: ChannelFuture) => {
+      if (future.isSuccess) {
+        consecutiveFailures = 0
+        user ! Connected(future.getChannel, mapper)
+        this ! 'connected
+      } else if (future.getCause() != null) {
+        // Ramp from 1 second to 5 minutes between retries
+        val delay :Long = math.min(300, 1 << consecutiveFailures) * 1000;
+        consecutiveFailures += 1
+        if (consecutiveFailures % 3 == 0) {
+          log.warn(future.getCause(), "Failed to connect %s times. Waiting %d millis before retrying.", consecutiveFailures, delay)
+        }
+        this ! ConnectingFailed(delay)
+      } else {
+        log.warn("Connecting cancelled?")
+        this ! 'shutdown
+      }
+    })
+    awaitConnection()
+  }
+
 }
