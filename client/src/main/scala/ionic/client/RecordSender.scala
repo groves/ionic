@@ -74,6 +74,7 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
       chan = newChan
       chan.getCloseFuture.addListener((_ :ChannelFuture) => { this ! ChannelClosed(newChan) })
       (0 until initialLength).foreach((_) => this ! CtxReady(new NettyMsgContext(chan, this, mapper)))
+      withConn()
     }
     case QueueInserted => {
       if (!ctxs.isEmpty && sendFromQueue(ctxs.head)) ctxs = ctxs.tail
