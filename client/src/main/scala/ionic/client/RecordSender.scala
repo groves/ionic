@@ -161,6 +161,7 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
     if (chan != null) chan.close()
     // TODO - queue to disk
     latches.foreach(_.countDown())
+    exit()
   }
 
   def shutdown() {
