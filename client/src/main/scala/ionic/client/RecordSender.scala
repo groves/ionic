@@ -80,7 +80,7 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
     }
     case QueueInserted => {
       if (!ctxs.isEmpty && sendFromQueue(ctxs.head)) ctxs = ctxs.tail
-      //TODO - spool if over 1024 in queue
+      // TODO - spool if over 1024 in queue
       act()
     }
     case CtxReady(ctx) => {
@@ -170,6 +170,7 @@ class RecordSender(queue: BlockingQueue[IndexedRecord], boot: ClientBootstrap) e
     latch.await(60, TimeUnit.SECONDS)
   }
 }
+
 class SchemaMapper(listener :Actor) extends SimpleChannelUpstreamHandler with Logging {
   private val schemas: ConcurrentMap[Schema, Long] = new ConcurrentHashMap[Schema, Long]
   def apply(schema: Schema): Option[Long] = schemas.get(schema)

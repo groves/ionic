@@ -17,9 +17,9 @@ class AvroIntLengthFieldPrepender extends OneToOneEncoder {
     val length = body.readableBytes()
     val bytes = new Array[Byte](5)
     val encodedSize = BinaryData.encodeInt(length, bytes, 0)
-    val header: ChannelBuffer = channel.getConfig().getBufferFactory().getBuffer(body.order(),
-      encodedSize);
+    val header: ChannelBuffer =
+      channel.getConfig().getBufferFactory().getBuffer(body.order(), encodedSize)
     header.writeBytes(bytes, 0, encodedSize)
-    return ChannelBuffers.wrappedBuffer(header, body);
+    return ChannelBuffers.wrappedBuffer(header, body)
   }
 }
